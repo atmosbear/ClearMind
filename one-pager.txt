@@ -24,7 +24,7 @@ It is hard to organize all of the things we have to do and things we want to rem
 					creation is cancelled
 					no dot is created
 					text box disappears
-				> many dots, dots [X, Y, Z], are already selected
+				> many dots, dots X, Y, Z for example, are already selected
 					> user presses LINKBUTTON
 						dot B becomes a child of all selected dots
 					> user presses SIBLINGBUTTON
@@ -51,3 +51,9 @@ It is hard to organize all of the things we have to do and things we want to rem
 // DOT FILTERING/PERSPECTIVES
 	> user presses PERSPECTIVESHIFTBUTTON
 		> perhaps this is just clicking on a separate parent to see the new relations?
+		> example...?
+			user has the following chart:
+				alphabet
+					made up of: letters
+						
+// should have category nodes and info nodes? Hmmm.
