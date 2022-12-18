@@ -1,43 +1,53 @@
-// one-pager.ts
+// one-pager.txt
 It is hard to organize all of the things we have to do and things we want to remember. I propose a mind mapping app that focuses specifically on three things:
 	1. quick-entry: entering data extremely quickly (using keyboard shortcuts, gestures, and intuitive UI)
 	2. perspective-based display: displaying connections in multiple perspectives (including multiple parents)
 	3. good performance: ensuring great performance even with large groups of data (using Pts.js)
 
 // START
-The app will start with a blank screen.
+	The app will start with a blank screen.
 // SELECTION
-user clicks dot
-	dot has appearance change to selected
+	user clicks dot
+		dot has appearance change to selected
+	user drags on blank canvas
+		low-opacity square appears in the shape of the drag
+		dots within the square are selected
+// BUTTONS
+	LINKBUTTON: probably 'enter' key
+	SIBLINGBUTTON: probably 'tab' key
+	PERSPECTIVESHIFTBUTTON: probably 'shift' key (lol, perspective 'shift')
 // DOT CREATION
-> user clicks blank area of the screen
-	text box opens
-		> user types a name into the box
-			> user clicks outside of the box OR user presses escape
-				creation is cancelled
-				no dot is created
-				text box disappears
-			> many dots, dots [X, Y, Z], are already selected
-				> user presses enter
-					dot B becomes a child of all selected dots
-				> user presses TAB
-					logically... dot B becomes a sibling of all selected dots? not sure. what if they don't have parents? see {ABCDEFG.}
-			> one dot, dot A, is already selected
-				> user presses enter
-					dot B is created
-					text box clears
-					dot B is made a child of (and becomes linked to) dot A
-				> user presses TAB
-					dot B is created
-					text box clears
-					> dot A has a parent
-						dot B gets linked to the parent of dot A
-						dot B is now a sibling of A
-					> dot A has no parent
-						? {ABCDEFG}
-			> no dots are already selected
-				> user presses enter
-					dot B is created
-					text box clears
-				> user presses TAB
-					? {view ABCDEFG}
+	> user clicks blank area of the screen
+		text box opens
+			> user types a name into the box
+				> user clicks outside of the box OR user presses escape
+					creation is cancelled
+					no dot is created
+					text box disappears
+				> many dots, dots [X, Y, Z], are already selected
+					> user presses LINKBUTTON
+						dot B becomes a child of all selected dots
+					> user presses SIBLINGBUTTON
+						logically... dot B becomes a sibling of all selected dots? not sure. what if they don't have parents? see {ABCDEFG.}
+				> one dot, dot A, is already selected
+					> user presses LINKBUTTON
+						dot B is created
+						text box clears
+						dot B is made a child of (and becomes linked to) dot A
+					> user presses SIBLINGBUTTON
+						dot B is created
+						text box clears
+						> dot A has a parent
+							dot B gets linked to the parent of dot A
+							dot B is now a sibling of A
+						> dot A has no parent
+							? {ABCDEFG}
+				> no dots are already selected
+					> user presses LINKBUTTON
+						dot B is created
+						text box clears
+					> user presses SIBLINGBUTTON
+						? {view ABCDEFG}
+// DOT FILTERING/PERSPECTIVES
+	> user presses PERSPECTIVESHIFTBUTTON
+		> perhaps this is just clicking on a separate parent to see the new relations?
