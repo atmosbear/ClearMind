@@ -1,3 +1,5 @@
+import { angleFrom3Points } from "./vector"
+
 class Dot {
     constructor(
         public title: string,
@@ -34,7 +36,6 @@ function createTestDots(howMany: number) {
     }
 }
 
-
 function mutatePos(A: Dot, B: Dot, dt) {
     let dx = A.x - B.x
     let signX = Math.sign(dx)
@@ -43,7 +44,7 @@ function mutatePos(A: Dot, B: Dot, dt) {
     let c1 = 1
     let c2 = 1
     let d = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2))
-    // let angle = Math.
+    let angle = angleFrom2Vectors(A, B)
     let springForce = c1 * Math.log(d / c2)
     dx += springForce
 
