@@ -28,11 +28,12 @@ let possibles = ["a", "b", "c", "q", "peter jackson", "dora"]
 createTestDots(10)
 function createTestDots(howMany: number) {
     for (let i = 0; i < howMany; i++) {
-        let x = innerWidth/2 + 300 * Math.random() - 150
-        let y = innerHeight/2 + 300 * Math.random() - 150
+        let x = innerWidth / 2 + 300 * Math.random() - 150
+        let y = innerHeight / 2 + 300 * Math.random() - 150
         dots.push(new Dot(possibles[Math.floor(Math.random() * possibles.length)], x, y))
     }
 }
+
 
 function mutatePos(A: Dot, B: Dot, dt) {
     let dx = A.x - B.x
@@ -42,10 +43,13 @@ function mutatePos(A: Dot, B: Dot, dt) {
     let c1 = 1
     let c2 = 1
     let d = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2))
-    
+    // let angle = Math.
+    let springForce = c1 * Math.log(d / c2)
+    dx += springForce
+
     //central
-    dx = A.x - innerWidth / 2 
-    dy = A.y - innerHeight / 2 
+    dx = A.x - innerWidth / 2
+    dy = A.y - innerHeight / 2
     signX = Math.sign(dx)
     signY = Math.sign(dy)
     let centralForceX = Math.abs(dx) * signX
