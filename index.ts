@@ -1,6 +1,5 @@
 import { point, selectRandom } from "./helpers"
 
-
 class Dot {
     constructor(
         public title: string,
@@ -26,23 +25,26 @@ class DrawingArea {
         public rightClickMenuElement: HTMLDivElement = document.getElementById("right-click-menu") as HTMLDivElement,
         public focusedDot?: Dot
     ) {
-        this.maximizeCanvas()
-        window.addEventListener("resize", () => { this.maximizeCanvas() })
+        this.maximizeCanvas(height, width)
+        if (height === innerHeight) {
+            window.addEventListener("resize", () => { this.maximizeCanvas(height, width) })
+        }
         Object.assign(this.canvasElement.style, { backgroundColor: this.color })
-        this.context.font = "30px Arial"
+        this.context.font = "30px Calibri"
     }
 
-    maximizeCanvas() {
-        this.canvasElement.width = innerWidth
-        this.canvasElement.height = innerHeight
+    maximizeCanvas(h: number, w: number) {
+        this.canvasElement.height = h
+        this.canvasElement.width = w
     }
 
     createTestDots(howMany: number) {
         let possibleTitles = ["a random note", "another random note", "cats", "big cats", "housecats", "dogs", "breeds", "german shepherd"]
         for (let i = 0; i < howMany; i++) {
-            let x = (innerWidth / 20) * Math.random()
-            let y = (innerHeight / 20) * Math.random()
+            let x = 100
+            let y = 100
             let dot = new Dot(selectRandom(possibleTitles), x, y)
+            dot.shouldBeVisible = true
             this.dots.push(dot)
             dot.linked.push(selectRandom(this.dots))
         }
@@ -60,7 +62,7 @@ class DrawingArea {
     drawDot(dot: Dot) {
         this.context.strokeStyle = "black"
         this.context.ellipse(dot.x, dot.y, dot.radius, dot.radius, 0, 0, 2 * Math.PI)
-        this.context.strokeText(dot.title, dot.x, dot.y)
+        this.context.fillText(dot.title, dot.x, dot.y)
     }
 
     clearCanvas() {
@@ -86,11 +88,11 @@ class DrawingArea {
         })
     }
 
-    animate(that) {
+    animate(that: DrawingArea) {
         that.clearCanvas()
         that.drawEachDot()
         that.context.stroke()
-        requestAnimationFrame(() => that.animate(that))
+        requestAnimationFrame(() => that.animate(this))
     }
 }
 
@@ -107,6 +109,6 @@ function createEventHandlers() {
 }
 
 let possiblePositions: point[] = []
-let canvas = new DrawingArea()
+let canvas = new DrawingArea(1000, 1000)
 canvas.createTestDots(10)
 canvas.animate(canvas)
