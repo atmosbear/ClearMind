@@ -18,7 +18,7 @@ export function subVectors(vectorA: point, vectorB: point) {
 
 export function angleFrom2Vectors(vectorA: point, vertexPoint: point): number {
         // assume x axis clockwise is +
-        return angleFrom3Points(vectorA, vertexPoint, {x: 0.1, y: 0.1})
+        return angleFrom3Points(vectorA, vertexPoint, {x: 0.01, y: 0})
 }
 
 export function angleFrom3Points(A: point, vertex: point, C: point): number {

@@ -1,4 +1,4 @@
-import { angleFrom2Vectors, angleFrom3Points, lengthOfVector, subVectors } from "./vector"
+import { angleFrom2Vectors, angleFrom3Points, lengthOfVector, point, subVectors } from "./vector"
 
 class Dot {
     constructor(
@@ -8,7 +8,8 @@ class Dot {
         public longText: string = "",
         public color: string = "black",
         public radius: number = 10,
-        public linked: Dot[] = []
+        public linked: Dot[] = [],
+        public onscreen: boolean = false
     ) { }
 }
 
@@ -28,87 +29,29 @@ context.translate(canvas.width / 2, canvas.height / 2)
 // app setup
 let dots: Dot[] = []
 let possibles = ["a", "b", "c", "q", "peter jackson", "dora"]
-createTestDots(10)
-let c1 = 0.1
-let c2 = 0.01
-let c3 = 100
-let c4 = 0.2
-let c5 = 0//.05//.002//0.001 * 1 / dots.length
+createTestDots(50)
 function createTestDots(howMany: number) {
     for (let i = 0; i < howMany; i++) {
-        let x = (innerWidth / 20) * Math.random() 
-        let y = (innerHeight / 20) * Math.random() 
+        let x = (innerWidth / 20) * Math.random()
+        let y = (innerHeight / 20) * Math.random()
         let dot = new Dot(possibles[Math.floor(Math.random() * possibles.length)], x, y)
         dots.push(dot)
-        // if (Math.random() > -1) {
+        if (Math.random() > -0.1) {
             dot.linked.push(dots[Math.floor(Math.random() * dots.length)])
-        // }
+        }
     }
 }
-
-function addNonLinkedForce(A: Dot, B: Dot) {
-    let distance = lengthOfVector({ x: A.x - B.x, y: A.y - B.y })
-    let force = c3 / Math.pow(distance, 2)
-    let angle = angleFrom2Vectors(A, B)
-    A.x += force * Math.cos(angle) * c4 * 1e4
-    A.y += force * Math.sin(angle) * c4 * 1e4
-    B.x -= force * Math.cos(angle) * c4 * 1e4
-    B.y -= force * Math.sin(angle) * c4 * 1e4
-
-}
-
-function addLinkedForce(A: Dot, B: Dot) {
-    let dx = B.x - A.x
-    let dy = B.y - A.y
-    let ideal = 1e-3
-    let distanceVector = {x: dx, y: dy}
-    let force = 0
-    let angle = angleFrom2Vectors(A, B)
-    if (lengthOfVector(distanceVector) < ideal) {
-        force =  c1 / Math.pow(lengthOfVector(distanceVector), 1) * ideal
-    } else if (lengthOfVector(distanceVector) > ideal) {
-        force = -0.1 * c1 / Math.pow(lengthOfVector(distanceVector), 1) * ideal
-    } else {
-    }
-    A.x -= force * Math.cos(angle) * 1e5
-    A.y -= force * Math.sin(angle) * 1e5
-    B.x += force * Math.cos(angle) * 1e5
-    B.y += force * Math.sin(angle) * 1e5
-
-    // let dx = B.x - A.x
-    // let dy = B.y - A.y
-    // let basicMagnitudeSpringForce = lengthOfVector({ x: dx, y: dy })
-    // let angle = angleFrom2Vectors(A, B)
-    // let editedMagnitudeSpringForce = c1 * Math.log(basicMagnitudeSpringForce / c2)
-    // A.x += editedMagnitudeSpringForce * Math.cos(angle) * c4
-    // A.y += editedMagnitudeSpringForce * Math.sin(angle) * c4
-    // B.x -= editedMagnitudeSpringForce * Math.cos(angle) * c4
-    // B.y -= editedMagnitudeSpringForce * Math.sin(angle) * c4
-}
-function addCentralForce(A: Dot) {
-    let reverse = { x: -A.x, y: -A.y }
-    A.x += reverse.x * c4 * c5
-    A.y += reverse.y * c4 * c5
-
-}
-
+let possiblePositions: point[] = [] 
+let topPos = {x: 0, y: -400}
+let focusedDot = dots[0]
 let dt = 0
+
+
+context.font = "30px Arial"
 function animate(tick) {
     context.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height)
-    for (let i = 0; i < dots.length; i++) {
-        let dot = dots[i]
-        for (let j = 0; j < dots.length; j++) {
-            let dot2 = dots[j]
-            if (dot !== dot2) {
-                if (dot.linked.includes(dot2)) {
-                    addLinkedForce(dot, dot2)
-                } else {
-                    addNonLinkedForce(dot, dot2)
-                }
-            }
-        }
-        addCentralForce(dot) // not sure if this should be here, or within the outer loop instead
-    }
+    let title = focusedDot.title
+    context.fillText(title, topPos.x - context.measureText(title).actualBoundingBoxRight/2, topPos.y)
     for (let i = 0; i < dots.length; i++) {
         let dot = dots[i]
         context.strokeStyle = "black"
@@ -119,6 +62,7 @@ function animate(tick) {
         })
         context.stroke()
         context.strokeText(dot.title, dot.x, dot.y)
+        dot.onscreen = true
     }
     requestAnimationFrame(animate)
     dt = tick - dt
