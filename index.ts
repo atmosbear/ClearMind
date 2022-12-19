@@ -90,8 +90,9 @@ class DrawingArea {
 class ContextMenu {
     constructor(
         public menuElement: HTMLDivElement = document.getElementById("right-click-menu")! as HTMLDivElement
-    ) {}
-
+    ) {
+        this.menuElement.style.display = "none"
+    }
 
     open(e: MouseEvent) {
         Object.assign(this.menuElement.style, { display: "block", top: e.clientY + "px", left: e.clientX + "px" })
@@ -119,6 +120,7 @@ function createEventHandlers() {
 }
 
 let possiblePositions: point[] = []
-let canvas = new DrawingArea(1000, 1000)
-canvas.createTestDots(10)
+let canvas = new DrawingArea()
+canvas.createTestDots(50)
 canvas.animate(canvas)
+createEventHandlers()
