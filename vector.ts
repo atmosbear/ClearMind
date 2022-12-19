@@ -1,7 +1,4 @@
-export type point = {
-    x: number
-    y: number
-}
+import { point } from "./helpers"
 
 export function lengthOfVector(components: point) {
     return Math.sqrt(Math.pow(components.x, 2) + Math.pow(components.y, 2))
