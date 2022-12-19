@@ -57,3 +57,5 @@ It is hard to organize all of the things we have to do and things we want to rem
 					made up of: letters
 						
 // should have category nodes and info nodes? Hmmm.
+/// ok, so pts can't really handle 40k+ either lol. Let's think.
+// 10k or so with canvas is fine. 
