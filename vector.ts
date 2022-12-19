@@ -11,7 +11,17 @@ export function dotProduct(vectorA: point, vectorB: point) {
     return (vectorA.x * vectorB.x) + (vectorA.y * vectorB.y)
 }
 
-export function angleFrom3Points(A: point, vertex: point, C: point) {
+export function subVectors(vectorA: point, vectorB: point) {
+    let subbed = {x: vectorA.x - vectorB.x, y: vectorA.y - vectorB.y}
+    return subbed
+}
+
+export function angleFrom2Vectors(vectorA: point, vertexPoint: point): number {
+        // assume x axis clockwise is +
+        return angleFrom3Points(vectorA, vertexPoint, {x: innerWidth, y: 0})
+}
+
+export function angleFrom3Points(A: point, vertex: point, C: point): number {
     // Just a reminder that point B is the point the rays A and C meet.
     let B = vertex
 

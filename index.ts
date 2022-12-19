@@ -1,4 +1,4 @@
-import { angleFrom3Points } from "./vector"
+import { angleFrom2Vectors, angleFrom3Points, lengthOfVector, subVectors } from "./vector"
 
 class Dot {
     constructor(
@@ -24,68 +24,56 @@ window.addEventListener("resize", () => { maximizeCanvas() })
 Object.assign(canvas.style, { backgroundColor: "white" })
 Object.assign(document.body.style, { backgroundColor: "black", margin: 0 })
 maximizeCanvas()
+context.translate(canvas.width / 2, canvas.height / 2)
 // app setup
 let dots: Dot[] = []
 let possibles = ["a", "b", "c", "q", "peter jackson", "dora"]
-createTestDots(10)
+createTestDots(20)
 function createTestDots(howMany: number) {
     for (let i = 0; i < howMany; i++) {
-        let x = innerWidth / 2 + 300 * Math.random() - 150
-        let y = innerHeight / 2 + 300 * Math.random() - 150
+        let x = Math.random() * innerWidth - innerWidth / 2
+        let y = Math.random() * innerHeight - innerHeight / 2
         dots.push(new Dot(possibles[Math.floor(Math.random() * possibles.length)], x, y))
     }
 }
 
-function mutatePos(A: Dot, B: Dot, dt) {
+function addLinkedForce(A: Dot, B: Dot, dt: number) {
     let dx = A.x - B.x
-    let signX = Math.sign(dx)
     let dy = A.y - B.y
-    let signY = Math.sign(dy)
     let c1 = 1
-    let c2 = 1
-    let d = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2))
+    let c2 = 10000
+    let basicMagnitudeSpringForce = lengthOfVector({ x: dx, y: dy })
     let angle = angleFrom2Vectors(A, B)
-    let springForce = c1 * Math.log(d / c2)
-    dx += springForce
+    let editedMagnitudeSpringForce = c1 * Math.log(basicMagnitudeSpringForce / c2)
+    A.x -= editedMagnitudeSpringForce * Math.cos(angle)
+    A.y -= editedMagnitudeSpringForce * Math.sin(angle)
+    B.x += editedMagnitudeSpringForce * Math.cos(angle)
+    B.y += editedMagnitudeSpringForce * Math.sin(angle)
+}
+function addCentralForce(A: Dot) {
+    let reverse = { x: -A.x, y: -A.y }
+    A.x += reverse.x * 0.01
+    A.y += reverse.y * 0.01
 
-    //central
-    dx = A.x - innerWidth / 2
-    dy = A.y - innerHeight / 2
-    signX = Math.sign(dx)
-    signY = Math.sign(dy)
-    let centralForceX = Math.abs(dx) * signX
-    let centralForceY = Math.abs(dy) * signY
-    A.x -= centralForceX * 0.001
-    A.y -= centralForceY * 0.001
-    // B.x -= centralForceX
-    // B.y -= centralForceY
 }
 
 let dt = 0
 function animate(tick) {
-    context.clearRect(0, 0, canvas.width, canvas.height)
+    context.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height)
     for (let i = 0; i < dots.length; i++) {
         let dot = dots[i]
         for (let j = 0; j < dots.length; j++) {
-            // define dots
             let dot2 = dots[j]
             if (dot !== dot2) {
-                // calculate physics
-                mutatePos(dot, dot2, dt)
+                if (dot.linked.includes(dot2) || dot.linked.includes(dot)) {
+                    addLinkedForce(dot, dot2, dt)
+                }
             }
+            addCentralForce(dot) // not sure if this should be here, or within the outer loop instead
         }
     }
     for (let i = 0; i < dots.length; i++) {
         let dot = dots[i]
-
-
-        // draw
-        if (dot.x > innerWidth || dot.x < 0) {
-            dot.x = innerWidth * Math.random()
-        }
-        if (dot.y > innerHeight || dot.y < 0) {
-            dot.y = innerHeight * Math.random()
-        }
         context.strokeStyle = "black"
         context.beginPath() // side note: this is super needed
         context.ellipse(dot.x, dot.y, dot.radius, dot.radius, 0, 0, 2 * Math.PI)
