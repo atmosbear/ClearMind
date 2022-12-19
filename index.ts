@@ -1,4 +1,4 @@
-import { point, selectRandom } from "./helpers"
+import { point, selectRandom } from "./extras/helpers"
 
 class Dot {
     constructor(
@@ -20,22 +20,22 @@ class DrawingArea {
         public width: number = innerWidth,
         public color: string = "orange",
         public dots: Dot[] = [],
-        public canvasElement: HTMLCanvasElement = document.getElementById("canvas")! as HTMLCanvasElement, // @ts-expect-error
+        public element: HTMLCanvasElement = document.getElementById("canvas")! as HTMLCanvasElement, // @ts-expect-error
         public context: CanvasRenderingContext2D = document.getElementById("canvas")!.getContext("2d"),
-        public rightClickMenuElement: HTMLDivElement = document.getElementById("right-click-menu") as HTMLDivElement,
-        public focusedDot?: Dot
+        public focusedDot?: Dot,
+        public contextMenu: ContextMenu = new ContextMenu()
     ) {
         this.maximizeCanvas(height, width)
         if (height === innerHeight) {
             window.addEventListener("resize", () => { this.maximizeCanvas(height, width) })
         }
-        Object.assign(this.canvasElement.style, { backgroundColor: this.color })
+        Object.assign(this.element.style, { backgroundColor: this.color })
         this.context.font = "30px Calibri"
     }
 
     maximizeCanvas(h: number, w: number) {
-        this.canvasElement.height = h
-        this.canvasElement.width = w
+        this.element.height = h
+        this.element.width = w
     }
 
     createTestDots(howMany: number) {
@@ -49,16 +49,7 @@ class DrawingArea {
             dot.linked.push(selectRandom(this.dots))
         }
     }
-
-    openMenu(e: MouseEvent) {
-        Object.assign(this.rightClickMenuElement.style, { display: "block", top: e.clientY + "px", left: e.clientX + "px" })
-    }
-
-    closeMenu() {
-        this.rightClickMenuElement.style.display = "none"
-    }
-
-
+    
     drawDot(dot: Dot) {
         this.context.strokeStyle = "black"
         this.context.ellipse(dot.x, dot.y, dot.radius, dot.radius, 0, 0, 2 * Math.PI)
@@ -66,7 +57,7 @@ class DrawingArea {
     }
 
     clearCanvas() {
-        this.context.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height)
+        this.context.clearRect(0, 0, this.element.width, this.element.height)
     }
 
     drawAllDotsLinkedTo(dot: Dot) {
@@ -96,14 +87,33 @@ class DrawingArea {
     }
 }
 
+class ContextMenu {
+    constructor(
+        public menuElement: HTMLDivElement = document.getElementById("right-click-menu")! as HTMLDivElement
+    ) {}
+
+
+    open(e: MouseEvent) {
+        Object.assign(this.menuElement.style, { display: "block", top: e.clientY + "px", left: e.clientX + "px" })
+    }
+
+    close() {
+        this.menuElement.style.display = "none"
+    }
+
+    createEventHandlers() {
+
+    }
+}
+
 function createEventHandlers() {
-    window.addEventListener("contextmenu", (e: MouseEvent) => {
+    canvas.element.addEventListener("contextmenu", (e: MouseEvent) => {
         e.preventDefault()
-        canvas.openMenu(e)
+        canvas.contextMenu.open(e)
     })
     window.addEventListener("click", (e) => {
         if (e.button === 0) {
-            canvas.closeMenu()
+            canvas.contextMenu.close()
         }
     })
 }
