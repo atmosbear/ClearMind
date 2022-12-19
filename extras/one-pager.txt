@@ -1,8 +1,8 @@
 // one-pager.txt
 It is hard to organize all of the things we have to do and things we want to remember. I propose a mind mapping app that focuses specifically on three things:
-	1. quick-entry: entering data extremely quickly (using keyboard shortcuts, gestures, and intuitive UI)
+	1. quick-entry: entering data extremely quickly (using keyboard shortcuts, gestures, and intuitive UI) // the right click menu is cool!
 	2. perspective-based display: displaying connections in multiple perspectives (including multiple parents)
-	3. good performance: ensuring great performance even with large groups of data (using Pts.js)
+	3. good performance: ensuring great performance even with large groups of data (using Pts.js) //nvm, PTS can't handle all that many either. I think I should just use canvas.
 
 // START
 	The app will start with a blank screen.

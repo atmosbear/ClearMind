@@ -18,11 +18,11 @@ class DrawingArea {
     constructor(
         public height: number = innerHeight,
         public width: number = innerWidth,
-        public color: string = "orange",
+        public color: string = "white",
         public dots: Dot[] = [],
+        public focusedDot?: Dot,
         public element: HTMLCanvasElement = document.getElementById("canvas")! as HTMLCanvasElement, // @ts-expect-error
         public context: CanvasRenderingContext2D = document.getElementById("canvas")!.getContext("2d"),
-        public focusedDot?: Dot,
         public contextMenu: ContextMenu = new ContextMenu()
     ) {
         this.maximizeCanvas(height, width)
@@ -82,7 +82,7 @@ class DrawingArea {
     animate(that: DrawingArea) {
         that.clearCanvas()
         that.drawEachDot()
-        that.context.stroke()
+        that.context.fill()
         requestAnimationFrame(() => that.animate(this))
     }
 }
@@ -92,6 +92,7 @@ class ContextMenu {
         public menuElement: HTMLDivElement = document.getElementById("right-click-menu")! as HTMLDivElement
     ) {
         this.menuElement.style.display = "none"
+        document.addEventListener("DOMContentLoaded", () => {this.createEventHandlers()}) // this is an awesome trick
     }
 
     open(e: MouseEvent) {
@@ -103,24 +104,18 @@ class ContextMenu {
     }
 
     createEventHandlers() {
-
+        canvas.element.addEventListener("contextmenu", (e: MouseEvent) => {
+            e.preventDefault()
+            canvas.contextMenu.open(e)
+        })
+        window.addEventListener("click", (e) => {
+            if (e.button === 0) {
+                canvas.contextMenu.close()
+            }
+        })
     }
 }
-
-function createEventHandlers() {
-    canvas.element.addEventListener("contextmenu", (e: MouseEvent) => {
-        e.preventDefault()
-        canvas.contextMenu.open(e)
-    })
-    window.addEventListener("click", (e) => {
-        if (e.button === 0) {
-            canvas.contextMenu.close()
-        }
-    })
-}
-
 let possiblePositions: point[] = []
 let canvas = new DrawingArea()
 canvas.createTestDots(50)
 canvas.animate(canvas)
-createEventHandlers()
