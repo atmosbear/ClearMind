@@ -37,18 +37,21 @@ class DrawingArea {
     styleCanvas(height: number, width: number) {
         this.maximizeCanvas(height, width)
         if (height === innerHeight) {
-            window.addEventListener("resize", () => { this.maximizeCanvas(height, width) })
+            window.addEventListener("resize", () => {
+                this.maximizeCanvas(innerHeight, innerWidth);
+                this.needsRedraw = true
+            })
         }
         Object.assign(this.element.style, { backgroundColor: this.color })
         this.context.font = "20px Calibri"
     }
 
-    createAndDrawNewLink(dotA: Dot, dotB: Dot) {
-        let link = new Link(dotA, dotB)
-        this.drawnLinks.push(link)
-        this.needsRedraw = true
-    }
-    createAndDrawNewLine(startPoint: point, endPoint: point) { }
+    // createAndDrawNewLink(dotA: Dot, dotB: Dot) {
+    //     let link = new Link(dotA, dotB)
+    //     this.drawnLinks.push(link)
+    //     this.needsRedraw = true
+    // }
+    // createAndDrawNewLine(startPoint: point, endPoint: point) { }
 
     maximizeCanvas(h: number, w: number) {
         this.element.height = h
@@ -69,12 +72,21 @@ class DrawingArea {
             let x = this.width * Math.random()
             let y = this.height * Math.random()
             let linked: Dot[] = []
-            if (Math.random() > 0.5 || this.dots.length === 1) {
-                let l = selectRandom(this.dots)
-                if (l)
-                    linked.push(l)
-            }
+            // if (Math.random() > 0.1 || this.dots.length === 1) {
+            let l = selectRandom(this.dots)
+            if (l)
+                linked.push(l)
+            // }
             this.createAndDrawNewDot(selectRandom(possibleTitles), x, y, linked)
+        }
+        let organize = true
+        if (organize) {
+            let i = 0
+            let positions: number[][] = []
+            while (i < 10000) {
+                i++
+                this.needsRedraw = true
+            }
         }
     }
 
@@ -105,7 +117,8 @@ class DrawingArea {
 
     drawAllDotsLinkedTo(dot: Dot) {
         dot.linked.forEach(endpoint => {
-            this.drawnLinks.push(new Link(dot, endpoint))
+            let l = new Link(dot, endpoint)
+            this.drawnLinks.push(l)
         })
         // dot.linked.forEach(link => {
         //     link.linked.forEach(link2 => {
@@ -141,10 +154,21 @@ class DrawingArea {
     animate(that: DrawingArea) {
         if (this.needsRedraw) {
             that.clearCanvas()
+            this.drawnLinks = []
             that.drawEachDot()
             that.drawEachLink()
             that.context.fill()
             that.needsRedraw = false
+            console.log(this.drawnLinks.length)
+            this.dots.forEach(dot => {
+                dot.linked.forEach(Ldot => {
+                    let dx = dot.x - Ldot.x
+                    let dy =dot.y - Ldot.y
+                    dot.x += dx * Math.random() - dx / 2
+                })
+                // dot.x += 1
+                this.needsRedraw = true
+            })
         }
         requestAnimationFrame(() => that.animate(this))
     }
@@ -350,5 +374,5 @@ class Link extends Line {
 const MOUSE = { isDown: false, dragging: false, hitStartedAt: { x: 0, y: 0 }, dragRegardlessOfPlace: true }
 const THEME = { selectedDotColor: "darkorange" }
 const CANVAS = new DrawingArea()
-CANVAS.createTestDots(100) // 5-10k runs just fine! Fantastic.
+CANVAS.createTestDots(10) // 5-10k runs just fine! Fantastic.
 CANVAS.animate(CANVAS)
