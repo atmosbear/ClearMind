@@ -21,6 +21,7 @@ class DrawingArea {
         public width: number = innerWidth,
         public color: string = "white",
         public dots: Dot[] = [],
+        public links: Link[] = [],
         public selectedDot?: Dot,
         public element: HTMLCanvasElement = el("canvas")! as HTMLCanvasElement, // @ts-expect-error
         public context: CanvasRenderingContext2D = el("canvas")!.getContext("2d"),
@@ -42,6 +43,13 @@ class DrawingArea {
         this.context.font = "20px Calibri"
     }
 
+    createAndDrawNewLink(dotA: Dot, dotB: Dot) {
+        let link = new Link(dotA, dotB)
+        this.links.push(link)
+        this.needsRedraw = true
+    }
+    createAndDrawNewLine(startPoint: point, endPoint: point) {}
+
     maximizeCanvas(h: number, w: number) {
         this.element.height = h
         this.element.width = w
@@ -58,7 +66,7 @@ class DrawingArea {
     createTestDots(howMany: number) {
         let possibleTitles = ["a random note", "another random note", "cats", "big cats", "housecats", "dogs", "breeds", "german shepherd"]
         for (let i = 0; i < howMany; i++) {
-            let x = this.width * Math.random()
+            let x = this.width * Math.random() - 300
             let y = this.height * Math.random()
             this.createAndDrawNewDot(selectRandom(possibleTitles), x, y)
         }
@@ -168,13 +176,12 @@ class DrawingArea {
     }
 }
 
-function isAWithinB(mouseX: number, mouseY: number, topLeftX: number, topLeftY: number, bottomRightX: number, bottomRightY: number): boolean { // A: [number, number], BtopLeft: [number, number], BbottomRight: [number, number]): boolean {
+function isAWithinB(mouseX: number, mouseY: number, topLeftX: number, topLeftY: number, bottomRightX: number, bottomRightY: number): boolean { 
     let isInside = false
     if (mouseX > topLeftX) {
         if (mouseX < bottomRightX) {
             if (mouseY < bottomRightY) {
                 if (mouseY > topLeftY) {
-                    console.log("yap")
                     isInside = true
                 }
             }
@@ -258,9 +265,9 @@ class EventHandler {
     }
 
     mouseDown(e: MouseEvent) {
-        CANVAS.handleSingleClickSelection(e)
-        MOUSE.isDown = true
         MOUSE.hitStartedAt = { x: e.clientX, y: e.clientY }
+        MOUSE.isDown = true
+        CANVAS.handleSingleClickSelection(e)
     }
     mouseUp(e: MouseEvent) {
         MOUSE.isDown = false
@@ -296,8 +303,22 @@ class EventHandler {
     }
 }
 
-const MOUSE = { isDown: false, dragging: false, hitStartedAt: { x: 0, y: 0 }, dragRegardlessOfPlace: false }
+class Line {
+    constructor(
+        public startpoint: point,
+        public endpoint: point,
+    ) { }
+}
+
+class Link extends Line {
+    constructor(public startDot: Dot, public endDot: Dot) {
+        super({ x: startDot.x, y: startDot.y }, { x: endDot.x, y: endDot.y })
+    }
+}
+
+
+const MOUSE = { isDown: false, dragging: false, hitStartedAt: { x: 0, y: 0 }, dragRegardlessOfPlace: true }
 const THEME = { selectedDotColor: "darkorange" }
 const CANVAS = new DrawingArea()
-// canvas.createTestDots(0)
+CANVAS.createTestDots(10) // 5-10k runs just fine! Fantastic.
 CANVAS.animate(CANVAS)
