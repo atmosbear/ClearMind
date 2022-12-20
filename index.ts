@@ -1,4 +1,4 @@
-import { point, selectRandom } from "./extras/helpers"
+import { point, selectRandom, el } from "./extras/helpers"
 
 class Dot {
     constructor(
@@ -21,8 +21,8 @@ class DrawingArea {
         public color: string = "white",
         public dots: Dot[] = [],
         public focusedDot?: Dot,
-        public element: HTMLCanvasElement = document.getElementById("canvas")! as HTMLCanvasElement, // @ts-expect-error
-        public context: CanvasRenderingContext2D = document.getElementById("canvas")!.getContext("2d"),
+        public element: HTMLCanvasElement = el("canvas")! as HTMLCanvasElement, // @ts-expect-error
+        public context: CanvasRenderingContext2D = el("canvas")!.getContext("2d"),
         public contextMenu: ContextMenu = new ContextMenu(),
         public inputBox: InputBox = new InputBox(),
         public needsRedraw: boolean = true
@@ -121,7 +121,7 @@ class DrawingArea {
 
 class InputBox {
     constructor(
-        public element: HTMLInputElement = document.getElementById("new-node-input-box") as HTMLInputElement
+        public element: HTMLInputElement = el("new-node-input-box") as HTMLInputElement
     ) {
         this.element.style.display = "none"
     }
@@ -136,7 +136,7 @@ class InputBox {
 
 class ContextMenu {
     constructor(
-        public element: HTMLDivElement = document.getElementById("right-click-menu")! as HTMLDivElement,
+        public element: HTMLDivElement = el("right-click-menu")! as HTMLDivElement,
     ) {
         this.element.style.display = "none"
         document.addEventListener("DOMContentLoaded", () => { this.createEventHandlers() }) // this is an awesome trick
@@ -165,13 +165,6 @@ class ContextMenu {
             canvas.askUserInputTitle(e)
         }
     }
-}
-
-/**
- * This function assumes you know that what you're asking for exists!
- */
-function el(id: string) {
-    return document.getElementById(id)!
 }
 
 let possiblePositions: point[] = []
