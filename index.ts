@@ -158,7 +158,11 @@ class ContextMenu {
         window.addEventListener("click", (e) => {
             if (e.button === 0) {
                 canvas.contextMenu.close()
+                if (e.target !== canvas.inputBox.element && e.target !== document.getElementById("new-dot-button")) {
+                    canvas.inputBox.close()
+                }
             }
+            console.log(e.target)
         })
         let button1 = el("new-dot-button") as HTMLButtonElement
         button1.onclick = (e: MouseEvent) => {
