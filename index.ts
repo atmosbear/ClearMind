@@ -161,13 +161,25 @@ class DrawingArea {
             that.needsRedraw = false
             console.log(this.drawnLinks.length)
             this.dots.forEach(dot => {
-                dot.linked.forEach(Ldot => {
-                    let dx = dot.x - Ldot.x
-                    let dy =dot.y - Ldot.y
-                    dot.x += dx * Math.random() - dx / 2
+                this.dots.forEach(dot2 => {
+                    if (dot !== dot2) {
+                        let dx = dot.x - dot2.x
+                        let dy = dot.y - dot2.y
+
+                        let limit = 1
+                        if (dot.linked.includes(dot2) || dot2.linked.includes(dot)) {
+                            dot.x += 0.1
+                            dot.y += 0.1
+                            this.needsRedraw = true
+                        }
+                        else {
+                            // dot.x += 1
+                            // dot2.x -= 1
+                            // dot.x += 1
+                            this.needsRedraw = true
+                        }
+                    }
                 })
-                // dot.x += 1
-                this.needsRedraw = true
             })
         }
         requestAnimationFrame(() => that.animate(this))
@@ -374,5 +386,5 @@ class Link extends Line {
 const MOUSE = { isDown: false, dragging: false, hitStartedAt: { x: 0, y: 0 }, dragRegardlessOfPlace: true }
 const THEME = { selectedDotColor: "darkorange" }
 const CANVAS = new DrawingArea()
-CANVAS.createTestDots(10) // 5-10k runs just fine! Fantastic.
+CANVAS.createTestDots(100) // 5-10k runs just fine! Fantastic.
 CANVAS.animate(CANVAS)
