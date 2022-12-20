@@ -21,7 +21,7 @@ class DrawingArea {
         public width: number = innerWidth,
         public color: string = "white",
         public dots: Dot[] = [],
-        public links: Link[] = [],
+        public drawnLinks: Link[] = [],
         public selectedDot?: Dot,
         public element: HTMLCanvasElement = el("canvas")! as HTMLCanvasElement, // @ts-expect-error
         public context: CanvasRenderingContext2D = el("canvas")!.getContext("2d"),
@@ -45,10 +45,10 @@ class DrawingArea {
 
     createAndDrawNewLink(dotA: Dot, dotB: Dot) {
         let link = new Link(dotA, dotB)
-        this.links.push(link)
+        this.drawnLinks.push(link)
         this.needsRedraw = true
     }
-    createAndDrawNewLine(startPoint: point, endPoint: point) {}
+    createAndDrawNewLine(startPoint: point, endPoint: point) { }
 
     maximizeCanvas(h: number, w: number) {
         this.element.height = h
@@ -66,10 +66,27 @@ class DrawingArea {
     createTestDots(howMany: number) {
         let possibleTitles = ["a random note", "another random note", "cats", "big cats", "housecats", "dogs", "breeds", "german shepherd"]
         for (let i = 0; i < howMany; i++) {
-            let x = this.width * Math.random() - 300
+            let x = this.width * Math.random()
             let y = this.height * Math.random()
-            this.createAndDrawNewDot(selectRandom(possibleTitles), x, y)
+            let linked: Dot[] = []
+            if (Math.random() > 0.5 || this.dots.length === 1) {
+                let l = selectRandom(this.dots)
+                if (l)
+                    linked.push(l)
+            }
+            this.createAndDrawNewDot(selectRandom(possibleTitles), x, y, linked)
         }
+    }
+
+    drawLine(line: Line) {
+        this.context.beginPath()
+        this.context.moveTo(line.startpoint.x, line.startpoint.y)
+        this.context.lineTo(line.endpoint.x, line.endpoint.y)
+        this.context.stroke()
+    }
+
+    drawLink(link: Link) {
+        this.drawLine(link)
     }
 
     drawDot(dot: Dot) {
@@ -87,6 +104,9 @@ class DrawingArea {
     }
 
     drawAllDotsLinkedTo(dot: Dot) {
+        dot.linked.forEach(endpoint => {
+            this.drawnLinks.push(new Link(dot, endpoint))
+        })
         // dot.linked.forEach(link => {
         //     link.linked.forEach(link2 => {
         //         if (link2.onscreen === false) {
@@ -101,12 +121,19 @@ class DrawingArea {
         // })
     }
 
+    drawEachLink() {
+        this.drawnLinks.forEach(link => {
+            this.context.beginPath()
+            this.drawLink(link)
+        })
+    }
+
     drawEachDot() {
         this.dots.forEach(dot => {
             if (dot.shouldBeVisible) {
                 this.context.beginPath()
                 this.drawDot(dot)
-                // this.drawAllDotsLinkedTo(dot)
+                this.drawAllDotsLinkedTo(dot)
             }
         })
     }
@@ -115,6 +142,7 @@ class DrawingArea {
         if (this.needsRedraw) {
             that.clearCanvas()
             that.drawEachDot()
+            that.drawEachLink()
             that.context.fill()
             that.needsRedraw = false
         }
@@ -140,7 +168,6 @@ class DrawingArea {
     }
 
     attemptToRemoveDot() {
-        console.log(this.dots)
         if (this.selectedDot !== undefined) {
             this.selectedDot.shouldBeVisible = false
             this.selectedDot.onscreen = false
@@ -148,8 +175,11 @@ class DrawingArea {
             this.dots.splice(this.dots.indexOf(this.selectedDot), 1)
             this.selectedDot = undefined
         }
-        console.log(this.dots)
         this.needsRedraw = true
+    }
+
+    link(dotA: Dot, dotB: Dot) {
+        dotA.linked.push(dotB)
     }
 
     handleSingleClickSelection(e: MouseEvent) {
@@ -176,7 +206,7 @@ class DrawingArea {
     }
 }
 
-function isAWithinB(mouseX: number, mouseY: number, topLeftX: number, topLeftY: number, bottomRightX: number, bottomRightY: number): boolean { 
+function isAWithinB(mouseX: number, mouseY: number, topLeftX: number, topLeftY: number, bottomRightX: number, bottomRightY: number): boolean {
     let isInside = false
     if (mouseX > topLeftX) {
         if (mouseX < bottomRightX) {
@@ -320,5 +350,5 @@ class Link extends Line {
 const MOUSE = { isDown: false, dragging: false, hitStartedAt: { x: 0, y: 0 }, dragRegardlessOfPlace: true }
 const THEME = { selectedDotColor: "darkorange" }
 const CANVAS = new DrawingArea()
-CANVAS.createTestDots(10) // 5-10k runs just fine! Fantastic.
+CANVAS.createTestDots(100) // 5-10k runs just fine! Fantastic.
 CANVAS.animate(CANVAS)
