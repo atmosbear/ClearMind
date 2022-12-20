@@ -23,14 +23,16 @@ class DrawingArea {
         public focusedDot?: Dot,
         public element: HTMLCanvasElement = document.getElementById("canvas")! as HTMLCanvasElement, // @ts-expect-error
         public context: CanvasRenderingContext2D = document.getElementById("canvas")!.getContext("2d"),
-        public contextMenu: ContextMenu = new ContextMenu()
+        public contextMenu: ContextMenu = new ContextMenu(),
+        public inputBox: InputBox = new InputBox(),
+        public needsRedraw: boolean = true
     ) {
         this.maximizeCanvas(height, width)
         if (height === innerHeight) {
             window.addEventListener("resize", () => { this.maximizeCanvas(height, width) })
         }
         Object.assign(this.element.style, { backgroundColor: this.color })
-        this.context.font = "30px Calibri"
+        this.context.font = "20px Calibri"
     }
 
     maximizeCanvas(h: number, w: number) {
@@ -38,22 +40,29 @@ class DrawingArea {
         this.element.width = w
     }
 
+    createAndDrawNewDot(title: string, x: number, y: number, linked: Dot[] = []) {
+        let dot = new Dot(title, x, y)
+        dot.shouldBeVisible = true
+        this.dots.push(dot)
+        dot.linked.push(...linked)
+        this.needsRedraw = true
+    }
+
     createTestDots(howMany: number) {
         let possibleTitles = ["a random note", "another random note", "cats", "big cats", "housecats", "dogs", "breeds", "german shepherd"]
         for (let i = 0; i < howMany; i++) {
-            let x = 100
-            let y = 100
-            let dot = new Dot(selectRandom(possibleTitles), x, y)
-            dot.shouldBeVisible = true
-            this.dots.push(dot)
-            dot.linked.push(selectRandom(this.dots))
+            let x = this.width * Math.random()
+            let y = this.height * Math.random()
+            this.createAndDrawNewDot(selectRandom(possibleTitles), x, y)
         }
     }
-    
+
     drawDot(dot: Dot) {
-        this.context.strokeStyle = "black"
+        this.context.beginPath()
+        this.context.fillStyle = "black"
         this.context.ellipse(dot.x, dot.y, dot.radius, dot.radius, 0, 0, 2 * Math.PI)
-        this.context.fillText(dot.title, dot.x, dot.y)
+        this.context.fillText(dot.title, dot.x + dot.radius * 1.3, dot.y + dot.radius * 1.3)
+        this.context.fill()
     }
 
     clearCanvas() {
@@ -63,9 +72,15 @@ class DrawingArea {
     drawAllDotsLinkedTo(dot: Dot) {
         dot.linked.forEach(link => {
             link.linked.forEach(link2 => {
-                this.drawDot(link2)
+                if (link2.onscreen === false) {
+                    this.drawDot(link2)
+                    link2.onscreen = true
+                }
             })
-            this.drawDot(link)
+            if (link.onscreen === false) {
+                this.drawDot(link)
+                link.onscreen = true
+            }
         })
     }
 
@@ -80,27 +95,59 @@ class DrawingArea {
     }
 
     animate(that: DrawingArea) {
-        that.clearCanvas()
-        that.drawEachDot()
-        that.context.fill()
+        if (this.needsRedraw) {
+            that.clearCanvas()
+            that.drawEachDot()
+            that.context.fill()
+            that.needsRedraw = false
+        }
         requestAnimationFrame(() => that.animate(this))
+    }
+
+    askUserInputTitle(e: MouseEvent) {
+        this.inputBox.open(e)
+        this.inputBox.element.value = ""
+        this.inputBox.element.focus()
+        this.inputBox.element.addEventListener("keypress", (e: KeyboardEvent) => {
+            if (e.key === "Enter") {
+                this.createAndDrawNewDot(this.inputBox.element.value,
+                    Number(this.inputBox.element.style.left.replace("px", "")) - 30,
+                    Number(this.inputBox.element.style.top.replace("px", "")) - 30);
+                this.inputBox.close()
+            }
+        })
+    }
+}
+
+class InputBox {
+    constructor(
+        public element: HTMLInputElement = document.getElementById("new-node-input-box") as HTMLInputElement
+    ) {
+        this.element.style.display = "none"
+    }
+
+    open(e: MouseEvent) {
+        Object.assign(this.element.style, { display: "block", top: e.clientY + "px", left: e.clientX + "px" })
+    }
+    close() {
+        this.element.style.display = "none"
     }
 }
 
 class ContextMenu {
     constructor(
-        public menuElement: HTMLDivElement = document.getElementById("right-click-menu")! as HTMLDivElement
+        public element: HTMLDivElement = document.getElementById("right-click-menu")! as HTMLDivElement,
     ) {
-        this.menuElement.style.display = "none"
-        document.addEventListener("DOMContentLoaded", () => {this.createEventHandlers()}) // this is an awesome trick
+        this.element.style.display = "none"
+        document.addEventListener("DOMContentLoaded", () => { this.createEventHandlers() }) // this is an awesome trick
     }
 
     open(e: MouseEvent) {
-        Object.assign(this.menuElement.style, { display: "block", top: e.clientY + "px", left: e.clientX + "px" })
+        Object.assign(this.element.style, { display: "block", top: e.clientY + "px", left: e.clientX + "px" })
     }
 
     close() {
-        this.menuElement.style.display = "none"
+        this.element.style.display = "none"
     }
 
     createEventHandlers() {
@@ -113,9 +160,21 @@ class ContextMenu {
                 canvas.contextMenu.close()
             }
         })
+        let button1 = el("new-dot-button") as HTMLButtonElement
+        button1.onclick = (e: MouseEvent) => {
+            canvas.askUserInputTitle(e)
+        }
     }
 }
+
+/**
+ * This function assumes you know that what you're asking for exists!
+ */
+function el(id: string) {
+    return document.getElementById(id)!
+}
+
 let possiblePositions: point[] = []
 let canvas = new DrawingArea()
-canvas.createTestDots(50)
+canvas.createTestDots(0)
 canvas.animate(canvas)
