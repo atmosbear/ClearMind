@@ -10,17 +10,18 @@ class Dot {
         public radius: number = 10,
         public linked: Dot[] = [],
         public onscreen: boolean = false,
-        public shouldBeVisible: boolean = false
+        public shouldBeVisible: boolean = false,
+        public isSelected: boolean = false,
     ) { }
 }
-
+let go = false
 class DrawingArea {
     constructor(
         public height: number = innerHeight,
         public width: number = innerWidth,
         public color: string = "white",
         public dots: Dot[] = [],
-        public focusedDot?: Dot,
+        public selectedDot?: Dot,
         public element: HTMLCanvasElement = el("canvas")! as HTMLCanvasElement, // @ts-expect-error
         public context: CanvasRenderingContext2D = el("canvas")!.getContext("2d"),
         public contextMenu: ContextMenu = new ContextMenu(),
@@ -58,8 +59,9 @@ class DrawingArea {
     }
 
     drawDot(dot: Dot) {
+        dot.onscreen = true;
         this.context.beginPath()
-        this.context.fillStyle = "black"
+        this.context.fillStyle = dot.color
         this.context.ellipse(dot.x, dot.y, dot.radius, dot.radius, 0, 0, 2 * Math.PI)
         this.context.fillText(dot.title, dot.x + dot.radius * 1.3, dot.y + dot.radius * 1.3)
         this.context.fill()
@@ -67,21 +69,22 @@ class DrawingArea {
 
     clearCanvas() {
         this.context.clearRect(0, 0, this.element.width, this.element.height)
+        this.context.beginPath()
     }
 
     drawAllDotsLinkedTo(dot: Dot) {
-        dot.linked.forEach(link => {
-            link.linked.forEach(link2 => {
-                if (link2.onscreen === false) {
-                    this.drawDot(link2)
-                    link2.onscreen = true
-                }
-            })
-            if (link.onscreen === false) {
-                this.drawDot(link)
-                link.onscreen = true
-            }
-        })
+        // dot.linked.forEach(link => {
+        //     link.linked.forEach(link2 => {
+        //         if (link2.onscreen === false) {
+        //             this.drawDot(link2)
+        //             link2.onscreen = true
+        //         }
+        //     })
+        //     if (link.onscreen === false) {
+        //         this.drawDot(link)
+        //         link.onscreen = true
+        //     }
+        // })
     }
 
     drawEachDot() {
@@ -89,7 +92,7 @@ class DrawingArea {
             if (dot.shouldBeVisible) {
                 this.context.beginPath()
                 this.drawDot(dot)
-                this.drawAllDotsLinkedTo(dot)
+                // this.drawAllDotsLinkedTo(dot)
             }
         })
     }
@@ -108,15 +111,65 @@ class DrawingArea {
         this.inputBox.open(e)
         this.inputBox.element.value = ""
         this.inputBox.element.focus()
-        this.inputBox.element.addEventListener("keypress", (e: KeyboardEvent) => {
+        this.inputBox.element.addEventListener("keyup", (e: KeyboardEvent) => {
             if (e.key === "Enter") {
+                if (go !== true) {
                 this.createAndDrawNewDot(this.inputBox.element.value,
                     Number(this.inputBox.element.style.left.replace("px", "")) - 30,
                     Number(this.inputBox.element.style.top.replace("px", "")) - 30);
                 this.inputBox.close()
+                }
+                go = true
+                setTimeout(() => {go = false}, 500)
             }
         })
     }
+
+    attemptToRemoveDot() {
+        if (this.selectedDot) {
+            this.selectedDot.shouldBeVisible = false
+            this.selectedDot.onscreen = false
+            this.selectedDot.isSelected = false
+            this.dots.splice(this.dots.indexOf(this.selectedDot), 1)
+            this.selectedDot = undefined
+        }
+        this.needsRedraw = true
+    }
+
+    handleSingleClickSelection(e: MouseEvent) {
+        let extra = 20
+        if (this.selectedDot !== undefined) {
+            this.selectedDot.color = "black"
+            this.selectedDot = undefined
+        }
+        canvas.needsRedraw = true
+        this.dots.forEach(dot => {
+            if (dot.onscreen) {
+                if (isAWithinB(e.clientX, e.clientY, dot.x - extra - dot.radius, dot.y - extra - dot.radius, dot.x + extra + dot.radius, dot.y + extra + dot.radius)) {
+                    this.selectedDot = dot
+                    this.selectedDot.isSelected = true
+                    // this.selectedDot.color = selectRandom(["black", "red", "blue", "orange", "yellow", "purple", "pink"])
+                    this.selectedDot.color = globalTheme.selectedDotColor
+                    canvas.needsRedraw = true
+                    return this.selectedDot
+                }
+            }
+        })
+    }
+}
+
+function isAWithinB(mouseX: number, mouseY: number, topLeftX: number, topLeftY: number, bottomRightX: number, bottomRightY: number): boolean { // A: [number, number], BtopLeft: [number, number], BbottomRight: [number, number]): boolean {
+    let isInside = false
+    if (mouseX > topLeftX) {
+        if (mouseX < bottomRightX) {
+            if (mouseY < bottomRightY) {
+                if (mouseY > topLeftY) {
+                    isInside = true
+                }
+            }
+        }
+    }
+    return isInside
 }
 
 class InputBox {
@@ -144,6 +197,12 @@ class ContextMenu {
 
     open(e: MouseEvent) {
         Object.assign(this.element.style, { display: "block", top: e.clientY + "px", left: e.clientX + "px" })
+        let RDB = el("remove-selected-button") as HTMLButtonElement
+        if (canvas.selectedDot) {
+            RDB.disabled = false
+        } else {
+            RDB.disabled = true
+        }
     }
 
     close() {
@@ -151,27 +210,34 @@ class ContextMenu {
     }
 
     createEventHandlers() {
+        // context menu opening
         canvas.element.addEventListener("contextmenu", (e: MouseEvent) => {
             e.preventDefault()
             canvas.contextMenu.open(e)
         })
+        // context menu closing
         window.addEventListener("click", (e) => {
             if (e.button === 0) {
+                canvas.handleSingleClickSelection(e)
                 canvas.contextMenu.close()
-                if (e.target !== canvas.inputBox.element && e.target !== document.getElementById("new-dot-button")) {
+                if (e.target !== canvas.inputBox.element && e.target !== document.getElementById("new-dot-button") && e.target !== document.getElementById("remove-selected-button")) {
                     canvas.inputBox.close()
                 }
             }
-            console.log(e.target)
         })
+        // new-dot-button clicking
         let button1 = el("new-dot-button") as HTMLButtonElement
         button1.onclick = (e: MouseEvent) => {
             canvas.askUserInputTitle(e)
         }
+        let button2 = el("remove-selected-button") as HTMLButtonElement
+        button2.onclick = (e: MouseEvent) => {
+            canvas.attemptToRemoveDot()
+        }
     }
 }
 
-let possiblePositions: point[] = []
+let globalTheme = { selectedDotColor: "darkorange" }
 let canvas = new DrawingArea()
-canvas.createTestDots(0)
+// canvas.createTestDots(0)
 canvas.animate(canvas)
