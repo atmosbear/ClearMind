@@ -26,8 +26,14 @@ class DrawingArea {
         public context: CanvasRenderingContext2D = el("canvas")!.getContext("2d"),
         public contextMenu: ContextMenu = new ContextMenu(),
         public inputBox: InputBox = new InputBox(),
+        public eventHandler: EventHandler | undefined = undefined,
         public needsRedraw: boolean = true
     ) {
+        this.eventHandler = this.eventHandler ?? new EventHandler(this, this.inputBox, this.contextMenu)
+        this.styleCanvas(height, width)
+    }
+
+    styleCanvas(height: number, width: number) {
         this.maximizeCanvas(height, width)
         if (height === innerHeight) {
             window.addEventListener("resize", () => { this.maximizeCanvas(height, width) })
@@ -114,43 +120,47 @@ class DrawingArea {
         this.inputBox.element.addEventListener("keyup", (e: KeyboardEvent) => {
             if (e.key === "Enter") {
                 if (go !== true) {
-                this.createAndDrawNewDot(this.inputBox.element.value,
-                    Number(this.inputBox.element.style.left.replace("px", "")) - 30,
-                    Number(this.inputBox.element.style.top.replace("px", "")) - 30);
-                this.inputBox.close()
+                    this.createAndDrawNewDot(this.inputBox.element.value,
+                        Number(this.inputBox.element.style.left.replace("px", "")) - 30,
+                        Number(this.inputBox.element.style.top.replace("px", "")) - 30);
+                    this.inputBox.close()
                 }
                 go = true
-                setTimeout(() => {go = false}, 500)
+                setTimeout(() => { go = false }, 500)
             }
         })
     }
 
     attemptToRemoveDot() {
-        if (this.selectedDot) {
+        console.log(this.dots)
+        if (this.selectedDot !== undefined) {
             this.selectedDot.shouldBeVisible = false
             this.selectedDot.onscreen = false
             this.selectedDot.isSelected = false
             this.dots.splice(this.dots.indexOf(this.selectedDot), 1)
             this.selectedDot = undefined
         }
+        console.log(this.dots)
         this.needsRedraw = true
     }
 
     handleSingleClickSelection(e: MouseEvent) {
         let extra = 20
-        if (this.selectedDot !== undefined) {
+        if (this.selectedDot !== undefined && e.target !== el("remove-selected-button")) {
             this.selectedDot.color = "black"
             this.selectedDot = undefined
         }
-        canvas.needsRedraw = true
+        CANVAS.needsRedraw = true
         this.dots.forEach(dot => {
             if (dot.onscreen) {
                 if (isAWithinB(e.clientX, e.clientY, dot.x - extra - dot.radius, dot.y - extra - dot.radius, dot.x + extra + dot.radius, dot.y + extra + dot.radius)) {
-                    this.selectedDot = dot
-                    this.selectedDot.isSelected = true
-                    // this.selectedDot.color = selectRandom(["black", "red", "blue", "orange", "yellow", "purple", "pink"])
-                    this.selectedDot.color = globalTheme.selectedDotColor
-                    canvas.needsRedraw = true
+                    if (!this.selectedDot) {
+                        this.selectedDot = dot
+                        this.selectedDot.isSelected = true
+                        // this.selectedDot.color = selectRandom(["black", "red", "blue", "orange", "yellow", "purple", "pink"])
+                        this.selectedDot.color = THEME.selectedDotColor
+                        CANVAS.needsRedraw = true
+                    }
                     return this.selectedDot
                 }
             }
@@ -158,14 +168,13 @@ class DrawingArea {
     }
 }
 
-let mouseIsDown = false
-
 function isAWithinB(mouseX: number, mouseY: number, topLeftX: number, topLeftY: number, bottomRightX: number, bottomRightY: number): boolean { // A: [number, number], BtopLeft: [number, number], BbottomRight: [number, number]): boolean {
     let isInside = false
     if (mouseX > topLeftX) {
         if (mouseX < bottomRightX) {
             if (mouseY < bottomRightY) {
                 if (mouseY > topLeftY) {
+                    console.log("yap")
                     isInside = true
                 }
             }
@@ -199,11 +208,11 @@ class ContextMenu {
 
     open(e: MouseEvent) {
         Object.assign(this.element.style, { display: "block", top: e.clientY + "px", left: e.clientX + "px" })
-        let RDB = el("remove-selected-button") as HTMLButtonElement
-        if (canvas.selectedDot) {
-            RDB.disabled = false
+        let removeSelectedButton = el("remove-selected-button") as HTMLButtonElement
+        if (CANVAS.selectedDot) {
+            removeSelectedButton.disabled = false
         } else {
-            RDB.disabled = true
+            removeSelectedButton.disabled = true
         }
     }
 
@@ -213,46 +222,82 @@ class ContextMenu {
 
     createEventHandlers() {
         // context menu opening
-        canvas.element.addEventListener("contextmenu", (e: MouseEvent) => {
+        CANVAS.element.addEventListener("contextmenu", (e: MouseEvent) => {
             e.preventDefault()
-            canvas.contextMenu.open(e)
+            CANVAS.contextMenu.open(e)
         })
         // context menu closing
         window.addEventListener("mouseup", (e: MouseEvent) => {
             if (e.button === 0) {
-                canvas.handleSingleClickSelection(e)
-                canvas.contextMenu.close()
-                if (e.target !== canvas.inputBox.element && e.target !== document.getElementById("new-dot-button") && e.target !== document.getElementById("remove-selected-button")) {
-                    canvas.inputBox.close()
+                CANVAS.contextMenu.close()
+                if (e.target !== CANVAS.inputBox.element && e.target !== document.getElementById("new-dot-button") && e.target !== document.getElementById("remove-selected-button")) {
+                    CANVAS.inputBox.close()
                 }
             }
-        })
-        window.addEventListener("mousemove", (e: MouseEvent) => {
-            if (mouseIsDown && canvas.selectedDot) {
-                canvas.selectedDot.x = e.clientX
-                canvas.selectedDot.y = e.clientY
-                canvas.needsRedraw = true
-            }
-        })
-        window.addEventListener("mousedown", (e: MouseEvent) => {
-            mouseIsDown = true
-        })
-        window.addEventListener("mouseup", (e: MouseEvent) => {
-            mouseIsDown = false
         })
         // new-dot-button clicking
         let button1 = el("new-dot-button") as HTMLButtonElement
         button1.onclick = (e: MouseEvent) => {
-            canvas.askUserInputTitle(e)
+            CANVAS.askUserInputTitle(e)
         }
         let button2 = el("remove-selected-button") as HTMLButtonElement
         button2.onclick = (e: MouseEvent) => {
-            canvas.attemptToRemoveDot()
+            CANVAS.attemptToRemoveDot()
+        }
+    }
+}
+class EventHandler {
+    constructor(
+        public canvas: DrawingArea,
+        public inputBox: InputBox,
+        public contextMenu: ContextMenu
+    ) {
+        window.addEventListener("mousedown", (e) => { this.mouseDown(e) })
+        window.addEventListener("mouseup", (e) => { this.mouseUp(e) })
+        window.addEventListener("mousemove", (e) => { this.mouseMove(e) })
+    }
+
+    mouseDown(e: MouseEvent) {
+        CANVAS.handleSingleClickSelection(e)
+        MOUSE.isDown = true
+        MOUSE.hitStartedAt = { x: e.clientX, y: e.clientY }
+    }
+    mouseUp(e: MouseEvent) {
+        MOUSE.isDown = false
+        MOUSE.dragging = false
+        MOUSE.dragRegardlessOfPlace = true
+        MOUSE.hitStartedAt = { x: 0, y: 0 }
+    }
+    mouseMove(e: MouseEvent) {
+        if (MOUSE.isDown === true) {
+            MOUSE.dragging = true
+        }
+        if (MOUSE.dragging && MOUSE.dragRegardlessOfPlace && CANVAS.selectedDot) {
+            CANVAS.selectedDot.x = e.clientX
+            CANVAS.selectedDot.y = e.clientY
+            MOUSE.hitStartedAt = { x: 0, y: 0 }
+            CANVAS.needsRedraw = true
+        } else if (MOUSE.dragging
+            && CANVAS.selectedDot
+            && isAWithinB(
+                MOUSE.hitStartedAt.x,
+                MOUSE.hitStartedAt.y,
+                CANVAS.selectedDot.x,
+                CANVAS.selectedDot.y,
+                CANVAS.selectedDot.x + CANVAS.selectedDot.radius,
+                CANVAS.selectedDot.y + CANVAS.selectedDot.radius
+            )) {
+            CANVAS.selectedDot.x = e.clientX
+            CANVAS.selectedDot.y = e.clientY
+            MOUSE.dragRegardlessOfPlace = true
+            MOUSE.hitStartedAt = { x: e.clientX, y: e.clientY }
+            CANVAS.needsRedraw = true
         }
     }
 }
 
-let globalTheme = { selectedDotColor: "darkorange" }
-let canvas = new DrawingArea()
+const MOUSE = { isDown: false, dragging: false, hitStartedAt: { x: 0, y: 0 }, dragRegardlessOfPlace: false }
+const THEME = { selectedDotColor: "darkorange" }
+const CANVAS = new DrawingArea()
 // canvas.createTestDots(0)
-canvas.animate(canvas)
+CANVAS.animate(CANVAS)
