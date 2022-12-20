@@ -158,6 +158,8 @@ class DrawingArea {
     }
 }
 
+let mouseIsDown = false
+
 function isAWithinB(mouseX: number, mouseY: number, topLeftX: number, topLeftY: number, bottomRightX: number, bottomRightY: number): boolean { // A: [number, number], BtopLeft: [number, number], BbottomRight: [number, number]): boolean {
     let isInside = false
     if (mouseX > topLeftX) {
@@ -216,7 +218,7 @@ class ContextMenu {
             canvas.contextMenu.open(e)
         })
         // context menu closing
-        window.addEventListener("click", (e) => {
+        window.addEventListener("mouseup", (e: MouseEvent) => {
             if (e.button === 0) {
                 canvas.handleSingleClickSelection(e)
                 canvas.contextMenu.close()
@@ -224,6 +226,19 @@ class ContextMenu {
                     canvas.inputBox.close()
                 }
             }
+        })
+        window.addEventListener("mousemove", (e: MouseEvent) => {
+            if (mouseIsDown && canvas.selectedDot) {
+                canvas.selectedDot.x = e.clientX
+                canvas.selectedDot.y = e.clientY
+                canvas.needsRedraw = true
+            }
+        })
+        window.addEventListener("mousedown", (e: MouseEvent) => {
+            mouseIsDown = true
+        })
+        window.addEventListener("mouseup", (e: MouseEvent) => {
+            mouseIsDown = false
         })
         // new-dot-button clicking
         let button1 = el("new-dot-button") as HTMLButtonElement
