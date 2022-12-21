@@ -65,27 +65,24 @@ class DrawingArea {
             let x = this.width * Math.random()
             let y = this.height * Math.random()
             let linked: Dot[] = []
-            if (Math.random() > 0.1 || this.dots.length === 1) {
-                let l = selectRandom(this.dots)
-                if (l)
-                    linked.push(l)
-            }
+            this.dots.forEach(dot => {
+                this.dots.forEach(dot2 => {
+                    if (dot !== dot2)
+                        dot.linked.push(dot2)
+                })
+
+            })
+            // if (i > 1)
+            //     this.dots[i-1].linked.push(this.dots[0])
+            // linked.push(this.dots[0])
             this.createAndDrawNewDot(selectRandom(possibleTitles), x, y, linked)
             // let center = this.dots[0]
             // this.dots[i].linked.push(center)
         }
-        let organize = true
-        if (organize) {
-            let i = 0
-            let positions: number[][] = []
-            while (i < 10000) {
-                i++
-                this.needsRedraw = true
-            }
-        }
     }
 
     drawLine(line: Line) {
+        this.context.strokeStyle = "gray"
         this.context.beginPath()
         this.context.moveTo(line.startpoint.x, line.startpoint.y)
         this.context.lineTo(line.endpoint.x, line.endpoint.y)
@@ -100,8 +97,9 @@ class DrawingArea {
         dot.onscreen = true;
         this.context.beginPath()
         this.context.fillStyle = dot.color
-        this.context.ellipse(dot.x, dot.y, dot.radius, dot.radius, 0, 0, 2 * Math.PI)
-        this.context.fillText(dot.title, dot.x + dot.radius * 1.3, dot.y + dot.radius * 1.3)
+        // this.context.ellipse(dot.x, dot.y, dot.radius, dot.radius, 0, 0, 2 * Math.PI)
+        this.context.fillText(dot.title, dot.x - this.context.measureText(dot.title).width / 2, dot.y)
+        // this.context.fillText(dot.title, dot.x + dot.radius * 1.3, dot.y + dot.radius * 1.3)
         this.context.fill()
     }
 
@@ -146,22 +144,46 @@ class DrawingArea {
         })
     }
 
+    drawChildrenOf(dot: Dot) {
+        let numToDraw = dot.linked.length
+        let maxPerRow = 1
+        let numRows = Math.floor((numToDraw / maxPerRow))
+        let drawn: any[] = []
+        let height = (innerHeight / 2) / numRows
+        let width = (innerWidth / 2) / maxPerRow
+        for (let y = 0; y < numRows; y++) {
+            for (let x = 0; x < maxPerRow; x++) {
+                // fix
+                if (!drawn.includes(dot.linked[x])) {
+                    dot.linked[x].x = width + (x) * width
+                    dot.linked[x].y = height + (y) * height
+                    this.drawLink(new Link(dot, dot.linked[x]))
+                    this.drawDot(dot.linked[x])
+                    drawn.push(dot.linked[x])
+                }
+            }
+        }
+    }
+
     animate(that: DrawingArea) {
         if (this.needsRedraw) {
             that.clearCanvas()
             this.drawnLinks = []
-            that.drawEachDot()
+            // this.selectedDot = this.dots[0]
+            this.dots[2].x = innerWidth / 2
+            this.dots[2].y = innerHeight / 5
+            this.drawDot(this.dots[2])
+            that.drawChildrenOf(this.dots[2])
+            // that.drawEachDot()
             that.drawEachLink()
             that.context.fill()
             that.needsRedraw = false
-            let dot = this.dots[0]
             function distance(dot1, dot2) {
                 let dx = dot1.x - dot2.x
                 let dy = dot1.y - dot2.y
                 let mag = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2))
                 return { dx, dy, mag }
             }
-            // not sure what to do yet!
             this.needsRedraw = true
         }
         requestAnimationFrame(() => that.animate(this))
@@ -368,5 +390,5 @@ class Link extends Line {
 const MOUSE = { isDown: false, dragging: false, hitStartedAt: { x: 0, y: 0 }, dragRegardlessOfPlace: true }
 const THEME = { selectedDotColor: "darkorange" }
 const CANVAS = new DrawingArea()
-CANVAS.createTestDots(50) // 5-10k runs just fine! Fantastic.
+CANVAS.createTestDots(50)
 CANVAS.animate(CANVAS)
