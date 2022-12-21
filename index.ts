@@ -66,23 +66,16 @@ class DrawingArea {
             let y = this.height * Math.random()
             let linked: Dot[] = []
             this.dots.forEach(dot => {
-                this.dots.forEach(dot2 => {
-                    if (dot !== dot2)
-                        dot.linked.push(dot2)
-                })
-
+                if (dot !== this.dots[0]) {
+                    if (Math.random() > 0.99)
+                        dot.linked.push(selectRandom(this.dots))
+                }
             })
-            // if (i > 1)
-            //     this.dots[i-1].linked.push(this.dots[0])
-            // linked.push(this.dots[0])
             this.createAndDrawNewDot(selectRandom(possibleTitles), x, y, linked)
-            // let center = this.dots[0]
-            // this.dots[i].linked.push(center)
         }
     }
 
     drawLine(line: Line) {
-        this.context.strokeStyle = "gray"
         this.context.beginPath()
         this.context.moveTo(line.startpoint.x, line.startpoint.y)
         this.context.lineTo(line.endpoint.x, line.endpoint.y)
@@ -90,11 +83,20 @@ class DrawingArea {
     }
 
     drawLink(link: Link) {
+        if (link.startDot === this.selectedDot || link.endDot === this.selectedDot) {
+            this.context.strokeStyle = "blue"
+            this.context.lineWidth = 3
+        }
+        else {
+            this.context.strokeStyle = "darkslategray"
+            this.context.lineWidth = 0.5
+        }
         this.drawLine(link)
     }
 
     drawDot(dot: Dot) {
         dot.onscreen = true;
+        dot.shouldBeVisible = true;
         this.context.beginPath()
         this.context.fillStyle = dot.color
         // this.context.ellipse(dot.x, dot.y, dot.radius, dot.radius, 0, 0, 2 * Math.PI)
@@ -145,24 +147,15 @@ class DrawingArea {
     }
 
     drawChildrenOf(dot: Dot) {
-        let numToDraw = dot.linked.length
-        let maxPerRow = 1
-        let numRows = Math.floor((numToDraw / maxPerRow))
-        let drawn: any[] = []
-        let height = (innerHeight / 2) / numRows
-        let width = (innerWidth / 2) / maxPerRow
-        for (let y = 0; y < numRows; y++) {
-            for (let x = 0; x < maxPerRow; x++) {
-                // fix
-                if (!drawn.includes(dot.linked[x])) {
-                    dot.linked[x].x = width + (x) * width
-                    dot.linked[x].y = height + (y) * height
-                    this.drawLink(new Link(dot, dot.linked[x]))
-                    this.drawDot(dot.linked[x])
-                    drawn.push(dot.linked[x])
-                }
-            }
-        }
+        // let numToDraw = dot.linked.length
+        // let perRow = 15
+        // let rows = Math.round(numToDraw / perRow)
+        // dot.linked.forEach((dot2, i) => {
+        //     if (!dot2.onscreen) {
+        //         this.drawDot(dot2);
+        //         this.drawLink(new Link(dot, dot2))
+        //     }
+        // })
     }
 
     animate(that: DrawingArea) {
@@ -170,21 +163,53 @@ class DrawingArea {
             that.clearCanvas()
             this.drawnLinks = []
             // this.selectedDot = this.dots[0]
-            this.dots[2].x = innerWidth / 2
-            this.dots[2].y = innerHeight / 5
-            this.drawDot(this.dots[2])
-            that.drawChildrenOf(this.dots[2])
-            // that.drawEachDot()
+            // this.dots[2].x = innerWidth / 2
+            // this.dots[2].y = innerHeight / 5
+            // this.drawDot(this.dots[2])
+            // that.drawChildrenOf(this.dots[2])
+            this.dots.forEach(dot => {
+                this.dots.forEach(dot2 => {
+                    if (dot !== dot2) {
+                        let d = distance(dot, dot2)
+                        let Kconstant = 200 / Math.pow(this.dots.length, 0.2) // increasing it makes the ideal length longer
+                        function attraction() {
+                            return {
+                                x: (Math.pow(d.mag, 2) / Kconstant) * Math.sign(d.dx) / d.mag,
+                                y: (Math.pow(d.mag, 2) / Kconstant) * Math.sign(d.dy) / d.mag
+                            }
+                        }
+                        function repulsion() {
+                            return {
+                                x: -(Math.pow(Kconstant, 2) / d.mag) * (Math.sign(d.dx) / d.mag),
+                                y: -(Math.pow(Kconstant, 2) / d.mag) * (Math.sign(d.dy) / d.mag)
+                            }
+                        }
+                        if (dot.linked.includes(dot2) || dot2.linked.includes(dot)) {
+                            if (Math.abs(d.dx) > 100) {
+                                dot.x -= attraction().x
+                                dot2.x += attraction().x
+                            }
+                            if (Math.abs(d.dy) > 100) {
+                                dot.y -= attraction().y
+                                dot2.y += attraction().y
+                            }
+                        } else {
+                            if (Math.abs(d.dy) > 100) {
+                                dot.y -= repulsion().y
+                                dot2.y += repulsion().y
+                            }
+                            if (Math.abs(d.dx) > 100) {
+                                dot2.x += repulsion().x
+                                dot.x -= repulsion().x
+                            }
+                        }
+                    }
+                })
+            })
+            that.drawEachDot()
             that.drawEachLink()
             that.context.fill()
-            that.needsRedraw = false
-            function distance(dot1, dot2) {
-                let dx = dot1.x - dot2.x
-                let dy = dot1.y - dot2.y
-                let mag = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2))
-                return { dx, dy, mag }
-            }
-            this.needsRedraw = true
+            that.needsRedraw = true
         }
         requestAnimationFrame(() => that.animate(this))
     }
@@ -323,6 +348,7 @@ class ContextMenu {
         }
     }
 }
+
 class EventHandler {
     constructor(
         public canvas: DrawingArea,
@@ -392,3 +418,10 @@ const THEME = { selectedDotColor: "darkorange" }
 const CANVAS = new DrawingArea()
 CANVAS.createTestDots(50)
 CANVAS.animate(CANVAS)
+function distance(dot1, dot2) {
+    let dx = dot1.x - dot2.x
+    let dy = dot1.y - dot2.y
+    let mag = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2))
+    return { dx, dy, mag }
+}
+let i = 0
