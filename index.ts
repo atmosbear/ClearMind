@@ -46,13 +46,6 @@ class DrawingArea {
         this.context.font = "20px Calibri"
     }
 
-    // createAndDrawNewLink(dotA: Dot, dotB: Dot) {
-    //     let link = new Link(dotA, dotB)
-    //     this.drawnLinks.push(link)
-    //     this.needsRedraw = true
-    // }
-    // createAndDrawNewLine(startPoint: point, endPoint: point) { }
-
     maximizeCanvas(h: number, w: number) {
         this.element.height = h
         this.element.width = w
@@ -73,11 +66,13 @@ class DrawingArea {
             let y = this.height * Math.random()
             let linked: Dot[] = []
             // if (Math.random() > 0.1 || this.dots.length === 1) {
-            let l = selectRandom(this.dots)
-            if (l)
-                linked.push(l)
+            // let l = selectRandom(this.dots)
+            // if (l)
+            //     linked.push(l)
             // }
             this.createAndDrawNewDot(selectRandom(possibleTitles), x, y, linked)
+            let center = this.dots[0]
+            this.dots[i].linked.push(center)
         }
         let organize = true
         if (organize) {
@@ -159,28 +154,41 @@ class DrawingArea {
             that.drawEachLink()
             that.context.fill()
             that.needsRedraw = false
-            console.log(this.drawnLinks.length)
-            this.dots.forEach(dot => {
-                this.dots.forEach(dot2 => {
-                    if (dot !== dot2) {
-                        let dx = dot.x - dot2.x
-                        let dy = dot.y - dot2.y
-
-                        let limit = 1
-                        if (dot.linked.includes(dot2) || dot2.linked.includes(dot)) {
-                            dot.x += 0.1
-                            dot.y += 0.1
-                            this.needsRedraw = true
-                        }
-                        else {
-                            // dot.x += 1
-                            // dot2.x -= 1
-                            // dot.x += 1
-                            this.needsRedraw = true
+            // this.dots.forEach(dot => {
+            let dot = this.dots[0]
+            let center = { x: 500, y: 500 }
+            let positions = [...circle(105, center.x, center.y, this.dots.length/10), ...circle(205, center.x, center.y, this.dots.length/10), ...circle(305, center.x, center.y, this.dots.length/10)]
+            function circle(radius: number, startX: number, startY: number, numPoints: number) {
+                let positions: number[][] = []
+                let center: number[] = [startX, startY]
+                let xSpan = [startX - radius, startX + radius]
+                let ySpan = [startY - radius, startY + radius]
+                let widths = Math.abs(xSpan[1] - xSpan[0]) / (numPoints)
+                let heights = Math.abs(ySpan[1] - ySpan[0]) / (numPoints)
+                let radiusSq = Math.pow(radius, 2)
+                for (let i = 0; i < numPoints ; i++) {
+                    let x = widths * i
+                    let ySquaredPlusStartY = Math.abs(radiusSq - Math.pow(x, 2))
+                    let y = Math.sqrt(ySquaredPlusStartY)
+                    if (!isNaN(x) && !isNaN(y)) {
+                        positions.push([x + startX, y + startY])
+                        positions.push([-x + startX, -y + startY])
+                        if (x !== 0 && y !== 0) {
+                            positions.push([-x + startX, y + startY])
+                            positions.push([x + startX, -y + startY])
                         }
                     }
-                })
+                }
+                return positions
+            }
+            this.dots.forEach((dot2, j) => {
+                dot2.x = positions[j][0]
+                dot2.y = positions[j][1]
             })
+            dot.x = center.x
+            dot.y = center.y
+            this.needsRedraw = true
+            // })
         }
         requestAnimationFrame(() => that.animate(this))
     }
@@ -386,5 +394,5 @@ class Link extends Line {
 const MOUSE = { isDown: false, dragging: false, hitStartedAt: { x: 0, y: 0 }, dragRegardlessOfPlace: true }
 const THEME = { selectedDotColor: "darkorange" }
 const CANVAS = new DrawingArea()
-CANVAS.createTestDots(100) // 5-10k runs just fine! Fantastic.
+CANVAS.createTestDots(50) // 5-10k runs just fine! Fantastic.
 CANVAS.animate(CANVAS)
