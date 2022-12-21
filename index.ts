@@ -28,7 +28,8 @@ class DrawingArea {
         public contextMenu: ContextMenu = new ContextMenu(),
         public inputBox: InputBox = new InputBox(),
         public eventHandler: EventHandler | undefined = undefined,
-        public needsRedraw: boolean = true
+        public needsRedraw: boolean = true,
+        public previousDot?: Dot,
     ) {
         this.eventHandler = this.eventHandler ?? new EventHandler(this, this.inputBox, this.contextMenu)
         this.styleCanvas(height, width)
@@ -57,6 +58,7 @@ class DrawingArea {
         this.dots.push(dot)
         dot.linked.push(...linked)
         this.needsRedraw = true
+        this.previousDot = dot
     }
 
     createTestDots(howMany: number) {
@@ -227,10 +229,17 @@ class DrawingArea {
         this.inputBox.element.focus()
         this.inputBox.element.addEventListener("keyup", (e: KeyboardEvent) => {
             if (e.key === "Enter") {
+                let linked: Dot[] = []
+                if (this.previousDot && !e.shiftKey)
+                    linked.push(this.previousDot)
+                if (!e.shiftKey && e.ctrlKey) {
+                    // i can't link to a parent because there may be 0 to infinity of them!
+                }
                 if (go !== true) {
                     this.createAndDrawNewDot(this.inputBox.element.value,
                         Number(this.inputBox.element.style.left.replace("px", "")) - 30,
-                        Number(this.inputBox.element.style.top.replace("px", "")) - 30);
+                        Number(this.inputBox.element.style.top.replace("px", "")) - 30, 
+                        linked);
                     this.inputBox.close()
                 }
                 go = true
@@ -245,6 +254,9 @@ class DrawingArea {
             this.selectedDot.onscreen = false
             this.selectedDot.isSelected = false
             this.dots.splice(this.dots.indexOf(this.selectedDot), 1)
+            if (this.previousDot === this.selectedDot) {
+                this.previousDot = undefined
+            }
             this.selectedDot = undefined
         }
         this.needsRedraw = true
@@ -344,6 +356,10 @@ class ContextMenu {
                 }
             }
         })
+        window.addEventListener("keypress", (e) => {
+            if (e.shiftKey && e.key === "N") {
+            CANVAS.askUserInputTitle(new MouseEvent("click", {clientX: 300, clientY: 300}))
+        }})
         // new-dot-button clicking
         let button1 = el("new-dot-button") as HTMLButtonElement
         button1.onclick = (e: MouseEvent) => {
@@ -459,9 +475,9 @@ const THEME = { selectedDotColor: "darkorange", selectedLinkColor: "blue", selec
 const CANVAS = new DrawingArea()
 let cooldownJiggles = 20
 let cooldownTime = 10
-let idealLength = 10
+let idealLength = 100
 let decimalChanceOfLink = 0.01
-CANVAS.createTestDots(200)
+CANVAS.createTestDots(3)
 CANVAS.animate(CANVAS)
 function distance(dot1, dot2) {
     let dx = dot1.x - dot2.x
