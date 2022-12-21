@@ -67,7 +67,7 @@ class DrawingArea {
             let linked: Dot[] = []
             this.dots.forEach(dot => {
                 if (dot !== this.dots[0]) {
-                    if (Math.random() > 0.99)
+                    if (Math.random() > 1 - decimalChanceOfLink)
                         dot.linked.push(selectRandom(this.dots))
                 }
             })
@@ -84,12 +84,12 @@ class DrawingArea {
 
     drawLink(link: Link) {
         if (link.startDot === this.selectedDot || link.endDot === this.selectedDot) {
-            this.context.strokeStyle = "blue"
-            this.context.lineWidth = 3
+            this.context.strokeStyle = THEME.selectedLinkColor
+            this.context.lineWidth = THEME.selectedLinkWidth
         }
         else {
-            this.context.strokeStyle = "darkslategray"
-            this.context.lineWidth = 0.5
+            this.context.strokeStyle = THEME.unselectedLinkColor
+            this.context.lineWidth = THEME.unselectedLinkWidth
         }
         this.drawLine(link)
     }
@@ -159,6 +159,12 @@ class DrawingArea {
     }
 
     animate(that: DrawingArea) {
+        if (MOUSE.pan && MOUSE.button === "middle" && MOUSE.isDown) {
+            CANVAS.dots.forEach(dot => {
+                dot.x -= (MOUSE.hitStartedAt.x - MOUSE.latestClientX) / 10
+                dot.y -= (MOUSE.hitStartedAt.y - MOUSE.latestClientY) / 10
+            })
+        }
         if (this.needsRedraw) {
             that.clearCanvas()
             this.drawnLinks = []
@@ -170,35 +176,36 @@ class DrawingArea {
             this.dots.forEach(dot => {
                 this.dots.forEach(dot2 => {
                     if (dot !== dot2) {
+                        cooldownJiggles /= 1 + (1 / cooldownTime) * 1e-6
                         let d = distance(dot, dot2)
-                        let Kconstant = 200 / Math.pow(this.dots.length, 0.2) // increasing it makes the ideal length longer
+                        let Kconstant = 100 / Math.pow(this.dots.length, 0.2) // increasing it makes the ideal length longer
                         function attraction() {
                             return {
-                                x: (Math.pow(d.mag, 2) / Kconstant) * Math.sign(d.dx) / d.mag,
-                                y: (Math.pow(d.mag, 2) / Kconstant) * Math.sign(d.dy) / d.mag
+                                x: (Math.pow(d.mag, 2) / Kconstant) * Math.sign(d.dx) / d.mag * cooldownJiggles,
+                                y: (Math.pow(d.mag, 2) / Kconstant) * Math.sign(d.dy) / d.mag * cooldownJiggles
                             }
                         }
                         function repulsion() {
                             return {
-                                x: -(Math.pow(Kconstant, 2) / d.mag) * (Math.sign(d.dx) / d.mag),
-                                y: -(Math.pow(Kconstant, 2) / d.mag) * (Math.sign(d.dy) / d.mag)
+                                x: -(Math.pow(Kconstant, 2) / d.mag) * (Math.sign(d.dx) / d.mag) * cooldownJiggles,
+                                y: -(Math.pow(Kconstant, 2) / d.mag) * (Math.sign(d.dy) / d.mag) * cooldownJiggles
                             }
                         }
                         if (dot.linked.includes(dot2) || dot2.linked.includes(dot)) {
-                            if (Math.abs(d.dx) > 100) {
+                            if (Math.abs(d.dx) > idealLength) {
                                 dot.x -= attraction().x
                                 dot2.x += attraction().x
                             }
-                            if (Math.abs(d.dy) > 100) {
+                            if (Math.abs(d.dy) > idealLength) {
                                 dot.y -= attraction().y
                                 dot2.y += attraction().y
                             }
                         } else {
-                            if (Math.abs(d.dy) > 100) {
+                            if (Math.abs(d.dy) > idealLength) {
                                 dot.y -= repulsion().y
                                 dot2.y += repulsion().y
                             }
-                            if (Math.abs(d.dx) > 100) {
+                            if (Math.abs(d.dx) > idealLength) {
                                 dot2.x += repulsion().x
                                 dot.x -= repulsion().x
                             }
@@ -361,21 +368,36 @@ class EventHandler {
     }
 
     mouseDown(e: MouseEvent) {
-        MOUSE.hitStartedAt = { x: e.clientX, y: e.clientY }
+        MOUSE.latestClientX = e.clientX
+        MOUSE.latestClientY = e.clientY
         MOUSE.isDown = true
-        CANVAS.handleSingleClickSelection(e)
+        if (e.button === 0) { // left click on linux!
+            MOUSE.button = "left"
+            MOUSE.hitStartedAt = { x: e.clientX, y: e.clientY }
+            CANVAS.handleSingleClickSelection(e)
+        } else if (e.button === 2) { // right click
+            MOUSE.button = "right"
+            // CANVAS.dots = []
+        } else if (e.button === 1) { // middle click
+            MOUSE.button = "middle"
+            MOUSE.isDown = true
+            MOUSE.pan = true
+            MOUSE.hitStartedAt.x = e.clientX
+            MOUSE.hitStartedAt.y = e.clientY
+        }
     }
     mouseUp(e: MouseEvent) {
         MOUSE.isDown = false
         MOUSE.dragging = false
         MOUSE.dragRegardlessOfPlace = true
         MOUSE.hitStartedAt = { x: 0, y: 0 }
+        MOUSE.pan = false
     }
     mouseMove(e: MouseEvent) {
         if (MOUSE.isDown === true) {
             MOUSE.dragging = true
         }
-        if (MOUSE.dragging && MOUSE.dragRegardlessOfPlace && CANVAS.selectedDot) {
+        if (MOUSE.dragging && MOUSE.dragRegardlessOfPlace && CANVAS.selectedDot && MOUSE.button === "left") {
             CANVAS.selectedDot.x = e.clientX
             CANVAS.selectedDot.y = e.clientY
             MOUSE.hitStartedAt = { x: 0, y: 0 }
@@ -389,12 +411,20 @@ class EventHandler {
                 CANVAS.selectedDot.y,
                 CANVAS.selectedDot.x + CANVAS.selectedDot.radius,
                 CANVAS.selectedDot.y + CANVAS.selectedDot.radius
-            )) {
+            )
+            && MOUSE.button !== "middle") {
             CANVAS.selectedDot.x = e.clientX
             CANVAS.selectedDot.y = e.clientY
             MOUSE.dragRegardlessOfPlace = true
             MOUSE.hitStartedAt = { x: e.clientX, y: e.clientY }
             CANVAS.needsRedraw = true
+        } else if (MOUSE.pan && MOUSE.button === "middle") {
+            MOUSE.latestClientX = e.clientX
+            MOUSE.latestClientY = e.clientY
+            CANVAS.dots.forEach(dot => {
+                dot.x -= (MOUSE.hitStartedAt.x - e.clientX) / 100
+                dot.y -= (MOUSE.hitStartedAt.y - e.clientY) / 100
+            })
         }
     }
 }
@@ -413,10 +443,14 @@ class Link extends Line {
 }
 
 
-const MOUSE = { isDown: false, dragging: false, hitStartedAt: { x: 0, y: 0 }, dragRegardlessOfPlace: true }
-const THEME = { selectedDotColor: "darkorange" }
+const MOUSE = { isDown: false, dragging: false, hitStartedAt: { x: 0, y: 0 }, dragRegardlessOfPlace: true, pan: false, button: "none", latestClientX: 0, latestClientY: 0 }
+const THEME = { selectedDotColor: "darkorange", selectedLinkColor: "blue", selectedLinkWidth: 4, unselectedLinkColor: "gray", unselectedLinkWidth: 1 }
 const CANVAS = new DrawingArea()
-CANVAS.createTestDots(50)
+let cooldownJiggles = 20
+let cooldownTime = 1
+let idealLength = 10
+let decimalChanceOfLink = 0.006
+CANVAS.createTestDots(200)
 CANVAS.animate(CANVAS)
 function distance(dot1, dot2) {
     let dx = dot1.x - dot2.x
@@ -424,4 +458,3 @@ function distance(dot1, dot2) {
     let mag = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2))
     return { dx, dy, mag }
 }
-let i = 0
