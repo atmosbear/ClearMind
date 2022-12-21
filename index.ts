@@ -365,8 +365,19 @@ class EventHandler {
         window.addEventListener("mousedown", (e) => { this.mouseDown(e) })
         window.addEventListener("mouseup", (e) => { this.mouseUp(e) })
         window.addEventListener("mousemove", (e) => { this.mouseMove(e) })
+        window.addEventListener("scroll", (e) => { this.mouseScroll(e) })
     }
 
+    mouseScroll(e: Event) {
+
+        CANVAS.dots.forEach(dot => {
+            dot.x /= 1.5
+            dot.x += (innerWidth - dot.x) / 8 * window.scrollX
+            dot.y /= 1.5
+            dot.y += (innerHeight - dot.y) / 8 * window.scrollY
+            // dot.x
+        })
+    }
     mouseDown(e: MouseEvent) {
         MOUSE.latestClientX = e.clientX
         MOUSE.latestClientY = e.clientY
@@ -447,9 +458,9 @@ const MOUSE = { isDown: false, dragging: false, hitStartedAt: { x: 0, y: 0 }, dr
 const THEME = { selectedDotColor: "darkorange", selectedLinkColor: "blue", selectedLinkWidth: 4, unselectedLinkColor: "gray", unselectedLinkWidth: 1 }
 const CANVAS = new DrawingArea()
 let cooldownJiggles = 20
-let cooldownTime = 1
+let cooldownTime = 10
 let idealLength = 10
-let decimalChanceOfLink = 0.006
+let decimalChanceOfLink = 0.01
 CANVAS.createTestDots(200)
 CANVAS.animate(CANVAS)
 function distance(dot1, dot2) {
