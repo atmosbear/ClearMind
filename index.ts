@@ -65,14 +65,14 @@ class DrawingArea {
             let x = this.width * Math.random()
             let y = this.height * Math.random()
             let linked: Dot[] = []
-            // if (Math.random() > 0.1 || this.dots.length === 1) {
-            // let l = selectRandom(this.dots)
-            // if (l)
-            //     linked.push(l)
-            // }
+            if (Math.random() > 0.1 || this.dots.length === 1) {
+                let l = selectRandom(this.dots)
+                if (l)
+                    linked.push(l)
+            }
             this.createAndDrawNewDot(selectRandom(possibleTitles), x, y, linked)
-            let center = this.dots[0]
-            this.dots[i].linked.push(center)
+            // let center = this.dots[0]
+            // this.dots[i].linked.push(center)
         }
         let organize = true
         if (organize) {
@@ -154,41 +154,15 @@ class DrawingArea {
             that.drawEachLink()
             that.context.fill()
             that.needsRedraw = false
-            // this.dots.forEach(dot => {
             let dot = this.dots[0]
-            let center = { x: 500, y: 500 }
-            let positions = [...circle(105, center.x, center.y, this.dots.length/10), ...circle(205, center.x, center.y, this.dots.length/10), ...circle(305, center.x, center.y, this.dots.length/10)]
-            function circle(radius: number, startX: number, startY: number, numPoints: number) {
-                let positions: number[][] = []
-                let center: number[] = [startX, startY]
-                let xSpan = [startX - radius, startX + radius]
-                let ySpan = [startY - radius, startY + radius]
-                let widths = Math.abs(xSpan[1] - xSpan[0]) / (numPoints)
-                let heights = Math.abs(ySpan[1] - ySpan[0]) / (numPoints)
-                let radiusSq = Math.pow(radius, 2)
-                for (let i = 0; i < numPoints ; i++) {
-                    let x = widths * i
-                    let ySquaredPlusStartY = Math.abs(radiusSq - Math.pow(x, 2))
-                    let y = Math.sqrt(ySquaredPlusStartY)
-                    if (!isNaN(x) && !isNaN(y)) {
-                        positions.push([x + startX, y + startY])
-                        positions.push([-x + startX, -y + startY])
-                        if (x !== 0 && y !== 0) {
-                            positions.push([-x + startX, y + startY])
-                            positions.push([x + startX, -y + startY])
-                        }
-                    }
-                }
-                return positions
+            function distance(dot1, dot2) {
+                let dx = dot1.x - dot2.x
+                let dy = dot1.y - dot2.y
+                let mag = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2))
+                return { dx, dy, mag }
             }
-            this.dots.forEach((dot2, j) => {
-                dot2.x = positions[j][0]
-                dot2.y = positions[j][1]
-            })
-            dot.x = center.x
-            dot.y = center.y
+            // not sure what to do yet!
             this.needsRedraw = true
-            // })
         }
         requestAnimationFrame(() => that.animate(this))
     }
