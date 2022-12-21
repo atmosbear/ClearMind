@@ -178,7 +178,7 @@ class DrawingArea {
             this.dots.forEach(dot => {
                 this.dots.forEach(dot2 => {
                     if (dot !== dot2) {
-                        cooldownJiggles /= 1 + (1 / cooldownTime) * 1e-6
+                        cooldownJiggles /= 1 + (1 / cooldownTime) * exponent
                         let d = distance(dot, dot2)
                         let Kconstant = 100 / Math.pow(this.dots.length, 0.2) // increasing it makes the ideal length longer
                         function attraction() {
@@ -202,16 +202,23 @@ class DrawingArea {
                                 dot.y -= attraction().y
                                 dot2.y += attraction().y
                             }
-                        } else {
-                            if (Math.abs(d.dy) > idealLength) {
-                                dot.y -= repulsion().y
-                                dot2.y += repulsion().y
-                            }
-                            if (Math.abs(d.dx) > idealLength) {
-                                dot2.x += repulsion().x
-                                dot.x -= repulsion().x
-                            }
                         }
+                        // } else {
+                        if (Math.abs(d.dy) < idealLength) {
+                            dot.y -= repulsion().y
+                            dot2.y += repulsion().y
+                        }
+                        if (Math.abs(d.dx) < idealLength) {
+                            dot2.x += repulsion().x
+                            dot.x -= repulsion().x
+                        }
+                        // }
+                        // force towards center:
+                        let distToCenter = distance(dot, { x: innerWidth / 2, y: innerHeight / 2 })
+                        // if (Math.abs(d.dx) > innerWidth)
+                            // dot.x -= distToCenter.dx / 3
+                        // if (Math.abs(d.dy) > innerHeight)
+                            // dot.y -= distToCenter.dy / 3
                     }
                 })
             })
@@ -238,7 +245,7 @@ class DrawingArea {
                 if (go !== true) {
                     this.createAndDrawNewDot(this.inputBox.element.value,
                         Number(this.inputBox.element.style.left.replace("px", "")) - 30,
-                        Number(this.inputBox.element.style.top.replace("px", "")) - 30, 
+                        Number(this.inputBox.element.style.top.replace("px", "")) - 30,
                         linked);
                     this.inputBox.close()
                 }
@@ -358,8 +365,9 @@ class ContextMenu {
         })
         window.addEventListener("keypress", (e) => {
             if (e.shiftKey && e.key === "N") {
-            CANVAS.askUserInputTitle(new MouseEvent("click", {clientX: 300, clientY: 300}))
-        }})
+                CANVAS.askUserInputTitle(new MouseEvent("click", { clientX: 300, clientY: 300 }))
+            }
+        })
         // new-dot-button clicking
         let button1 = el("new-dot-button") as HTMLButtonElement
         button1.onclick = (e: MouseEvent) => {
@@ -473,11 +481,12 @@ class Link extends Line {
 const MOUSE = { isDown: false, dragging: false, hitStartedAt: { x: 0, y: 0 }, dragRegardlessOfPlace: true, pan: false, button: "none", latestClientX: 0, latestClientY: 0 }
 const THEME = { selectedDotColor: "darkorange", selectedLinkColor: "blue", selectedLinkWidth: 4, unselectedLinkColor: "gray", unselectedLinkWidth: 1 }
 const CANVAS = new DrawingArea()
-let cooldownJiggles = 20
-let cooldownTime = 10
-let idealLength = 100
+let cooldownTime = 5
+let cooldownJiggles = cooldownTime * 5
 let decimalChanceOfLink = 0.01
-CANVAS.createTestDots(3)
+let exponent = 1e-5
+CANVAS.createTestDots(100)
+let idealLength = 100
 CANVAS.animate(CANVAS)
 function distance(dot1, dot2) {
     let dx = dot1.x - dot2.x
