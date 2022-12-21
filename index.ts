@@ -1,3 +1,4 @@
+import { e } from "vitest/dist/index-220c1d70"
 import { point, selectRandom, el } from "./extras/helpers"
 
 class Dot {
@@ -216,9 +217,9 @@ class DrawingArea {
                         // force towards center:
                         let distToCenter = distance(dot, { x: innerWidth / 2, y: innerHeight / 2 })
                         // if (Math.abs(d.dx) > innerWidth)
-                            // dot.x -= distToCenter.dx / 3
+                        // dot.x -= distToCenter.dx / 3
                         // if (Math.abs(d.dy) > innerHeight)
-                            // dot.y -= distToCenter.dy / 3
+                        // dot.y -= distToCenter.dy / 3
                     }
                 })
             })
@@ -251,6 +252,7 @@ class DrawingArea {
                 }
                 go = true
                 setTimeout(() => { go = false }, 500)
+                localStorage.setItem('dots', JSON.stringify(CANVAS.dots))
             }
         })
     }
@@ -474,6 +476,23 @@ class Line {
 class Link extends Line {
     constructor(public startDot: Dot, public endDot: Dot) {
         super({ x: startDot.x, y: startDot.y }, { x: endDot.x, y: endDot.y })
+        this.addArrow()
+    }
+
+    addArrow() {
+        let c = CANVAS.context
+        c.beginPath()
+        c.lineWidth = 3
+        let d = distance(this.startDot, this.endDot)
+        let angle = Math.asin(d.dy / d.dx)
+        let x = this.endDot.x
+        let y = this.endDot.y
+        let points = [[0, 10], [10, 10], [2, 2]]
+        for (let point of points) {
+            point = [point[0] * (1 / angle), point[1] * (1 / angle)]
+            c.lineTo(x + point[0], y + point[1])
+        }
+        c.stroke()
     }
 }
 
@@ -485,9 +504,15 @@ let cooldownTime = 5
 let cooldownJiggles = cooldownTime * 5
 let decimalChanceOfLink = 0.01
 let exponent = 1e-5
-CANVAS.createTestDots(100)
+CANVAS.createTestDots(0)
 let idealLength = 100
 CANVAS.animate(CANVAS)
+if (localStorage.getItem("dots") === null) {
+    localStorage.setItem('dots', JSON.stringify(CANVAS.dots))
+}
+else {
+    CANVAS.dots = JSON.parse(localStorage.getItem("dots")!)
+}
 function distance(dot1, dot2) {
     let dx = dot1.x - dot2.x
     let dy = dot1.y - dot2.y
